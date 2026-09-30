@@ -1,16 +1,25 @@
-# React + Vite
+# Queue it
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Guías de click y cues de voz para músicos. PWA para Android, sin cuenta, sin backend y 100 % offline.
 
-Currently, two official plugins are available:
+- Metrónomo por secciones con tempo, compás y accelerando/ritardando propios.
+- Pistas desde un audio con detección de pulso en el teléfono (essentia.js, también en música sin batería) y ajuste manual de la grilla.
+- Cues anclados a compás y tiempo: voz sintética, grabación propia o nota de texto.
+- Modo escenario con números grandes.
+- Exporta a WAV, hoja de cues (.txt) y respaldo del proyecto (.json).
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## Usar
 
-## React Compiler
+Abre la app publicada en Chrome para Android, luego menú → **Instalar app**. Desde ahí funciona sin conexión.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Desarrollar
 
-## Expanding the ESLint configuration
+```bash
+npm install
+npm run dev
+npm run build && npm run preview
+```
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+Arquitectura, stack y decisiones de diseño: [ARCHITECTURE.md](./ARCHITECTURE.md).
+
+Licencia: [AGPL-3.0-or-later](./LICENSE). La detección de pulso usa essentia.js (AGPL-3.0) y la voz usa meSpeak (GPL); detalles en [ARCHITECTURE.md](./ARCHITECTURE.md#licencias).
