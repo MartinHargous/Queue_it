@@ -29,10 +29,11 @@ export function TrackMap({ project, timeline, getPos, onSeek }) {
       start = next
     })
   } else if (timeline.bars.length) {
-    // Bloques de 8 compases para dar referencia visual en pistas de audio
-    for (let i = 0; i < timeline.bars.length; i += 8) {
+    // Bloques de compases como referencia visual; el tamaño crece con el largo para que los números no se encimen
+    const size = [4, 8, 16, 32, 64].find((n) => timeline.bars.length / n <= 10) ?? 128
+    for (let i = 0; i < timeline.bars.length; i += size) {
       const a = timeline.bars[i]
-      const b = timeline.bars[i + 8]
+      const b = timeline.bars[i + size]
       blocks.push({ id: a.bar, name: String(a.bar), left: (a.t / dur) * 100, width: (((b?.t ?? timeline.duration) - a.t) / dur) * 100 })
     }
   }
