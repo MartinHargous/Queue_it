@@ -49,6 +49,8 @@ src/
     HoldButton.jsx        botón que repite mientras se mantiene (adelantar/retroceder)
     Sheet.jsx, Stepper.jsx, icons.jsx
   lib/
+    i18n.js               idioma de la interfaz (es/en/pt); claves = texto en español
+    i18n/en.js, pt.js     traducciones
     model.js              modelo de datos + línea de tiempo (puro, testeable en Node)
     db.js                 IndexedDB
     useProject.js         carga y autoguardado con debounce
@@ -58,7 +60,8 @@ src/
       context.js          AudioContext único y caché de decodificación
       engine.js           Player (en vivo) y renderProject (offline)
       clicks.js           sonidos de click sintetizados
-      tts.js / tts.worker.js      voz sintética
+      tts.js / tts.worker.js      voz sintética (idiomas cargados bajo demanda)
+      voices.js           idiomas y timbres de la voz
       beat.js / beat.worker.js / beatDetect.js   detección de pulso
       recorder.js         grabación de voz
       wav.js              codificador WAV 16 bits
@@ -119,6 +122,8 @@ Un proyecto es un objeto JSON guardado en el store `projects`. Los audios (pista
 
 **Transporte.** El botón principal pausa y retoma desde el mismo punto. Una barra de posición permite arrastrar a cualquier segundo (sonando, salta al soltar). Adelantar y retroceder saltan al inicio del compás siguiente o anterior (`skipTarget`); mantenidos presionados siguen saltando cada vez más rápido (`HoldButton`). Retroceder dentro del primer medio segundo de un compás va al anterior. Tocar el mapa de la pista también mueve el cursor, incluso mientras suena. Durante la reproducción `Player.seek()` reprograma desde el nuevo punto sin volver a preparar voces ni audio.
 
+**Posición fluida.** En Android `currentTime` avanza a saltos (bloques de audio grandes), lo que hacía que la onda se moviera a tirones. `Player.position` interpola con `getOutputTimestamp()` y `performance.now()`, y nunca retrocede. La onda lee su tamaño con `ResizeObserver` (no fuerza layout en cada cuadro), dibuja el máximo de los picos de cada columna (no "tiembla" al desplazarse) y el panel de audio está memorizado para no redibujarse con cada actualización de la posición.
+
 **Fin de la reproducción.** El `Player` se detiene al terminar la estructura más la duración del cue más largo, para no cortar una frase de voz que cae en el último compás.
 
 **Render offline.** `renderProject()` crea un `OfflineAudioContext` estéreo a 44,1 kHz, programa todos los eventos de una vez y codifica el resultado a WAV de 16 bits.
@@ -131,7 +136,13 @@ Un proyecto es un objeto JSON guardado en el store `projects`. Los audios (pista
 
 `speechSynthesis` del navegador no sirve para este caso: no se puede capturar su audio (no hay exportación), su latencia es impredecible y no existe dentro de un WebView. Por eso la voz se genera con **meSpeak** dentro de un Web Worker, que devuelve un WAV en memoria. Ese audio se decodifica y se programa como cualquier otro evento, con precisión de muestra.
 
-Cada frase generada se guarda en el store `tts` con la clave `voz|velocidad|tono|texto`, así solo se sintetiza una vez. Las variantes disponibles son español latinoamericano y de España.
+Cada frase generada se guarda en el store `tts` con la clave `voz[+timbre]|velocidad|tono|texto`, así solo se sintetiza una vez.
+
+**Idiomas.** Español (Latinoamérica y España), inglés (EE. UU. y Reino Unido), portugués (Brasil y Portugal), francés, italiano, alemán, catalán, neerlandés, polaco y sueco. El proyecto tiene un idioma por defecto (Ajustes) y cada cue de voz puede elegir otro (`cue.voice`). El worker carga cada idioma recién cuando se usa; todos quedan precacheados para funcionar sin conexión.
+
+**Timbres.** Variantes de eSpeak: original, femenina (`f2`, `f4`) y masculina (`m3`, `m7`).
+
+**Pulido.** `polish()` recorta el silencio inicial (la voz empieza justo en su marca) y final, normaliza el pico a un nivel parejo entre frases y aplica un pasa bajos suave (~6,5 kHz) que quita parte del zumbido de eSpeak.
 
 **Limitación.** eSpeak suena robótico. La interfaz de `tts.js` (`ttsBuffer(text, settings)`) está aislada para cambiar de motor sin tocar el resto (ver Hoja de ruta).
 
@@ -156,6 +167,10 @@ Corre en `beat.worker.js` para no congelar la interfaz. Hay dos motores:
 Ajustes manuales siempre disponibles: **½×** y **2×** (errores de octava), ajuste fino en ms, modo **Tempo fijo** con *tap tempo* y tiempos por compás.
 
 A diferencia de Moises, no usa redes neuronales de separación de fuentes: con música muy rubato o sin pulso estable la detección seguirá siendo aproximada.
+
+## Idioma de la interfaz
+
+Selector ES / EN / PT en la pantalla de inicio. Por defecto usa el idioma del teléfono y la elección se guarda en `localStorage`. `t('texto en español', vars)` busca la traducción y, si falta, muestra el español. Los componentes llaman `useLang()` para redibujarse al cambiar de idioma.
 
 ## Persistencia
 
