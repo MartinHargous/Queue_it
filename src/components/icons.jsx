@@ -1,6 +1,9 @@
 const P = {
   play: 'M7 4.5v15l13-7.5z',
   stop: 'M6 6h12v12H6z',
+  pause: 'M6.5 5h4v14h-4zM13.5 5h4v14h-4z',
+  rew: 'M11 6v12l-8-6zM20 6v12l-8-6z',
+  fwd: 'M4 6v12l8-6zM13 6v12l8-6z',
   back: 'M15 5l-7 7 7 7',
   plus: 'M12 5v14M5 12h14',
   mic: 'M12 3a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V6a3 3 0 0 0-3-3zM5 11a7 7 0 0 0 14 0M12 18v3',

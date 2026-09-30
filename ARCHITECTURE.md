@@ -1,6 +1,6 @@
 # Queue it: arquitectura y stack tecnológico
 
-Queue it es una PWA para músicos que arma **guías de ensayo y de escenario**: una pista de click (metrónomo por secciones o pulso detectado sobre un audio) con **cues** de voz sintética, grabaciones propias o notas de texto ancladas a un compás y un tiempo. Cada pista se puede exportar.
+Queue it es una PWA para músicos que arma **guías de ensayo y de escenario**: una pista de click (metrónomo por secciones o pulso detectado sobre un audio) con **cues** de voz sintética, grabaciones propias o notas de texto, fijos en segundos o anclados a un compás y un tiempo. Cada pista se puede exportar.
 
 ## Principios
 
@@ -10,7 +10,7 @@ Queue it es una PWA para músicos que arma **guías de ensayo y de escenario**: 
 | 100 % offline | Service worker precachea la app completa, incluido el motor de voz y las fuentes. |
 | Android primero | Interfaz oscura para teléfono, instalable como WebAPK desde Chrome. Sin tiendas. |
 | Código abierto | Solo dependencias libres. La licencia del proyecto es AGPL-3.0-or-later (ver Licencias). |
-| Posiciones musicales | Los cues se guardan como `compás:tiempo`, no en segundos. Si cambia un tempo, los cues se mueven solos. |
+| Cues fijos o musicales | Cada cue elige su anclaje: **segundos fijos** (por defecto en los cues nuevos; no se mueve si cambia el tempo) o **compás:tiempo** (sigue a la estructura). Los cues sin `anchor` de versiones anteriores son de compás. |
 
 ## Stack
 
@@ -91,7 +91,7 @@ Un proyecto es un objeto JSON guardado en el store `projects`. Los audios (pista
   "grid": { "mode": "detected | fixed", "bpm": 110, "offset": 0.52, "num": 4,
             "beats": [0.52, 1.07, "…"], "downbeat": 0, "nudge": 0 },
   "cues": [
-    { "id": "…", "bar": 17, "beat": 1, "kind": "tts | voice | text", "text": "Coro", "blobId": null, "gain": 1 }
+    { "id": "…", "anchor": "time | bar", "time": 32.5, "bar": 17, "beat": 1, "kind": "tts | voice | text", "text": "Coro", "blobId": null, "gain": 1 }
   ],
   "mix": { "click": 0.8, "track": 1, "cues": 1, "clickOnAudio": false },
   "tts": { "voice": "es-la", "speed": 160, "pitch": 45 }
@@ -115,6 +115,8 @@ Un proyecto es un objeto JSON guardado en el store `projects`. Los audios (pista
 **Grafo.** Tres buses de ganancia (`click`, `track`, `cue`) van a un compresor-limitador maestro y de ahí a la salida. Los volúmenes cambian en vivo desde Ajustes.
 
 **Scheduler.** Cada 100 ms se programan los eventos de los próximos 1,5 s con `AudioBufferSourceNode.start(t)`. El margen amplio tolera que Chrome ralentice los timers en segundo plano, y al detener se cancelan todos los nodos pendientes. El `AudioContext` usa `latencyHint: 'playback'` (buffers más grandes, menos cortes en Android); la posición en pantalla compensa `outputLatency`.
+
+**Transporte.** El botón principal pausa y retoma desde el mismo punto. Adelantar y retroceder saltan al inicio del compás siguiente o anterior (`skipTarget`); retroceder dentro del primer medio segundo de un compás va al anterior, así se puede tocar varias veces. Tocar el mapa de la pista también mueve el cursor, incluso mientras suena. Durante la reproducción `Player.seek()` reprograma desde el nuevo punto sin volver a preparar voces ni audio.
 
 **Fin de la reproducción.** El `Player` se detiene al terminar la estructura más la duración del cue más largo, para no cortar una frase de voz que cae en el último compás.
 

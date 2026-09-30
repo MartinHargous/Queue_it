@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useProject } from '../lib/useProject.js'
-import { buildTimeline, cueTime, newCue, sortCues, formatTime } from '../lib/model.js'
+import { buildTimeline, cueTime, cueBarBeat, newTimeCue, sortCues, formatTime, formatTimePrecise, skipTarget } from '../lib/model.js'
 import { Player, loadResources, positionInfo } from '../lib/audio/engine.js'
 import { resumeContext } from '../lib/audio/context.js'
 import { keepAwake } from '../lib/wakeLock.js'
@@ -74,15 +74,41 @@ export function Editor({ id, goHome }) {
     keepAwake(false)
   }, [player])
 
+  // Pausa: detiene y deja el cursor donde iba, para retomar desde ahí
+  const pause = useCallback(() => {
+    const t = player.position
+    stop()
+    setStartTime(Math.max(0, t))
+    setPos(Math.max(0, t))
+  }, [player, stop])
+
+  const endTime = project && timeline ? Math.max(timeline.duration, project.audio?.duration ?? 0) : 0
+
+  const seek = useCallback(
+    (t) => {
+      const to = Math.min(Math.max(0, t), endTime)
+      if (player.playing) {
+        player.seek(to)
+        setPos(to)
+      } else setStartTime(to)
+    },
+    [player, endTime],
+  )
+
+  const skip = (dir) => seek(skipTarget(timeline, getPos(), dir))
+
   const play = useCallback(async () => {
-    if (player.playing) return stop()
+    if (player.playing) return pause()
     try {
       await resumeContext()
       setStatus('Preparando…')
       const res = await loadResources(project, { onStatus: setStatus })
       if (res.errors.length) setToast(`${res.errors.length} cue(s) no se pudieron preparar`)
-      await player.play(project, timeline, res, startTime, () => {
+      const from = startTime >= endTime - 0.05 ? 0 : startTime // al final, vuelve a empezar
+      if (from !== startTime) setStartTime(from)
+      await player.play(project, timeline, res, from, () => {
         setPlaying(false)
+        setStartTime(0)
         keepAwake(false)
       })
       setPlaying(true)
@@ -92,7 +118,7 @@ export function Editor({ id, goHome }) {
     } finally {
       setStatus(null)
     }
-  }, [project, timeline, startTime, stop, player])
+  }, [project, timeline, startTime, endTime, pause, player])
 
   if (missing) {
     return (
@@ -112,13 +138,11 @@ export function Editor({ id, goHome }) {
   const info = positionInfo(timeline, shownPos)
   const section = project.kind === 'metronome' ? project.sections[info.section] : null
 
+  // Marca un cue en el instante exacto (fijo en segundos, no se mueve si cambia el tempo)
   const markCue = () => {
-    const i = Math.max(0, info.index)
-    const b = timeline.beats[i]
-    if (!b) return
-    const cue = { ...newCue(b.bar, b.beat), text: '' }
+    const cue = newTimeCue(playing ? player.position : startTime)
     update((p) => ({ ...p, cues: [...p.cues, cue] }))
-    setToast(`Cue marcado en c.${b.bar}:${b.beat}`)
+    setToast(`Cue marcado en ${formatTimePrecise(cue.time)} (c.${info.bar}:${Math.max(1, info.beat)})`)
   }
 
   const saveCue = (cue) => {
@@ -133,7 +157,7 @@ export function Editor({ id, goHome }) {
     setEditingCue(null)
   }
 
-  const cueList = sortCues(project.cues).map((c) => ({ ...c, t: cueTime(timeline, c) }))
+  const cueList = sortCues(project.cues, timeline).map((c) => ({ ...c, t: cueTime(timeline, c), pos: cueBarBeat(timeline, c) }))
   const lastBar = timeline.bars.at(-1)?.bar ?? 1
 
   return (
@@ -173,7 +197,7 @@ export function Editor({ id, goHome }) {
         </button>
       </header>
 
-      <TrackMap project={project} timeline={timeline} getPos={getPos} playing={playing} onSeek={(t) => !playing && setStartTime(t)} />
+      <TrackMap project={project} timeline={timeline} getPos={getPos} onSeek={seek} />
 
       <nav className="tabs" role="tablist">
         {TABS.map(([k, label]) => (
@@ -192,10 +216,7 @@ export function Editor({ id, goHome }) {
         {tab === 'cues' && (
           <CuesPanel
             cues={cueList}
-            onAdd={() => {
-              const b = info.index >= 0 ? timeline.beats[info.index] : timeline.beats[0]
-              setEditingCue(newCue(b?.bar ?? 1, 1))
-            }}
+            onAdd={() => setEditingCue(newTimeCue(shownPos))}
             onEdit={(c) => setEditingCue(project.cues.find((x) => x.id === c.id))}
           />
         )}
@@ -219,8 +240,14 @@ export function Editor({ id, goHome }) {
           <button className="icon-btn" onClick={markCue} aria-label="Marcar cue aquí" title="Marcar cue aquí">
             <Icon name="plus" />
           </button>
-          <button className={`play-btn${playing ? ' is-playing' : ''}`} onClick={play} disabled={!!status} aria-label={playing ? 'Detener' : 'Reproducir'}>
-            <Icon name={playing ? 'stop' : 'play'} fill size={30} />
+          <button className="icon-btn transport-skip" onClick={() => skip(-1)} disabled={!!status} aria-label="Retroceder un compás" title="Retroceder un compás">
+            <Icon name="rew" fill />
+          </button>
+          <button className={`play-btn${playing ? ' is-playing' : ''}`} onClick={play} disabled={!!status} aria-label={playing ? 'Pausar' : 'Reproducir'}>
+            <Icon name={playing ? 'pause' : 'play'} fill size={30} />
+          </button>
+          <button className="icon-btn transport-skip" onClick={() => skip(1)} disabled={!!status} aria-label="Adelantar un compás" title="Adelantar un compás">
+            <Icon name="fwd" fill />
           </button>
           <button className="icon-btn" onClick={() => setStage(true)} aria-label="Modo escenario" title="Modo escenario">
             <Icon name="stage" />
@@ -241,6 +268,7 @@ export function Editor({ id, goHome }) {
           project={project}
           timeline={timeline}
           lastBar={lastBar}
+          currentTime={shownPos}
           isNew={!project.cues.some((c) => c.id === editingCue.id)}
           onSave={saveCue}
           onDelete={deleteCue}
@@ -257,6 +285,7 @@ export function Editor({ id, goHome }) {
           playing={playing}
           status={status}
           onToggle={play}
+          onSkip={skip}
           onClose={() => setStage(false)}
         />
       )}
