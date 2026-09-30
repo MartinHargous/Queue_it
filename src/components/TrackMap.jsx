@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react'
 import { cueTime } from '../lib/model.js'
 
 // Mapa de la pista completa: secciones a escala, cues y cursor. Tocar = ir a ese compás.
-export function TrackMap({ project, timeline, getPos, playing, onSeek }) {
+export function TrackMap({ project, timeline, getPos, onSeek }) {
   const head = useRef(null)
   const getPosRef = useRef(getPos)
   useEffect(() => {
@@ -38,7 +38,6 @@ export function TrackMap({ project, timeline, getPos, playing, onSeek }) {
   }
 
   const seek = (e) => {
-    if (playing) return
     const r = e.currentTarget.getBoundingClientRect()
     const t = ((e.clientX - r.left) / r.width) * dur
     // Ajusta al inicio del compás más cercano (hacia atrás)
@@ -48,7 +47,7 @@ export function TrackMap({ project, timeline, getPos, playing, onSeek }) {
   }
 
   return (
-    <div className={`trackmap${playing ? '' : ' is-seekable'}`} onClick={seek} role="presentation">
+    <div className="trackmap is-seekable" onClick={seek} role="presentation">
       {blocks.map((b) => (
         <span key={b.id} className="trackmap-block" style={{ left: `${b.left}%`, width: `${b.width}%` }}>
           <span>{b.name}</span>

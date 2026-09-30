@@ -588,6 +588,24 @@ input[type='range'] {
   color: var(--muted);
   font-variant-numeric: tabular-nums;
 }
+.cue-time {
+  display: grid;
+  justify-items: end;
+}
+.cue-anchor-tag {
+  font: 500 0.7rem var(--body);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+  opacity: 0.8;
+}
+.cue-anchor-info {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
 .cue-row.is-out {
   opacity: 0.5;
 }
@@ -723,7 +741,15 @@ input[type='range'] {
 .transport-actions {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 2px;
+  flex-shrink: 0;
+}
+.transport-actions .icon-btn {
+  width: 42px;
+  height: 42px;
+}
+.icon-btn:disabled {
+  opacity: 0.4;
 }
 .play-btn {
   width: 68px;
@@ -892,10 +918,19 @@ input[type='range'] {
   gap: 2px;
   font-size: 1.1rem;
 }
+.stage-controls {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  margin-top: 8px;
+}
+.stage-controls .icon-btn {
+  width: 64px;
+  height: 64px;
+}
 .stage-play {
   width: 96px;
   height: 96px;
-  margin-top: 8px;
 }
 
 @media (prefers-reduced-motion: reduce) {

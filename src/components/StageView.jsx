@@ -2,13 +2,13 @@ import { positionInfo } from '../lib/audio/engine.js'
 import { Icon } from './icons.jsx'
 
 // Vista de escenario: números grandes, legibles a un metro del atril.
-export function StageView({ project, timeline, cues, pos, playing, status, onToggle, onClose }) {
+export function StageView({ project, timeline, cues, pos, playing, status, onToggle, onSkip, onClose }) {
   const info = positionInfo(timeline, pos)
   const section = project.kind === 'metronome' ? project.sections[info.section] : null
   const placed = cues.filter((c) => c.t != null)
   const current = [...placed].reverse().find((c) => c.t <= pos + 0.05 && pos - c.t < 6)
   const next = placed.find((c) => c.t > pos + 0.05)
-  const barsToNext = next ? next.bar - info.bar : null
+  const barsToNext = next ? next.pos.bar - info.bar : null
 
   return (
     <div className="stage" role="dialog" aria-label="Modo escenario">
@@ -35,16 +35,24 @@ export function StageView({ project, timeline, cues, pos, playing, status, onTog
           <>
             <span className="muted">{barsToNext <= 0 ? 'Ahora' : barsToNext === 1 ? 'En 1 compás' : `En ${barsToNext} compases`}</span>
             <span>
-              c.{next.bar} {next.text}
+              c.{next.pos.bar} {next.text}
             </span>
           </>
         ) : (
           <span className="muted">Sin más cues</span>
         )}
       </div>
-      <button className={`play-btn stage-play${playing ? ' is-playing' : ''}`} onClick={onToggle} disabled={!!status} aria-label={playing ? 'Detener' : 'Reproducir'}>
-        <Icon name={playing ? 'stop' : 'play'} fill size={40} />
-      </button>
+      <div className="stage-controls">
+        <button className="icon-btn" onClick={() => onSkip(-1)} disabled={!!status} aria-label="Retroceder un compás">
+          <Icon name="rew" fill size={30} />
+        </button>
+        <button className={`play-btn stage-play${playing ? ' is-playing' : ''}`} onClick={onToggle} disabled={!!status} aria-label={playing ? 'Pausar' : 'Reproducir'}>
+          <Icon name={playing ? 'pause' : 'play'} fill size={40} />
+        </button>
+        <button className="icon-btn" onClick={() => onSkip(1)} disabled={!!status} aria-label="Adelantar un compás">
+          <Icon name="fwd" fill size={30} />
+        </button>
+      </div>
       {status && <p className="muted">{status}</p>}
     </div>
   )

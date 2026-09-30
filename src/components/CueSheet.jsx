@@ -6,7 +6,12 @@ import { startRecording } from '../lib/audio/recorder.js'
 import { ttsBuffer } from '../lib/audio/tts.js'
 import { resumeContext, decodeBlob, forgetDecoded } from '../lib/audio/context.js'
 import { getBlob, putBlob, deleteBlob } from '../lib/db.js'
-import { uid } from '../lib/model.js'
+import { uid, isTimeCue, cueTime, barBeatAt, formatTimePrecise } from '../lib/model.js'
+
+const ANCHORS = [
+  ['time', 'Segundos fijos'],
+  ['bar', 'Compás'],
+]
 
 const KINDS = [
   ['tts', 'Voz sintética'],
@@ -14,8 +19,8 @@ const KINDS = [
   ['text', 'Solo texto'],
 ]
 
-export function CueSheet({ cue, project, timeline, lastBar, isNew, onSave, onDelete, onClose }) {
-  const [draft, setDraft] = useState(cue)
+export function CueSheet({ cue, project, timeline, lastBar, currentTime = 0, isNew, onSave, onDelete, onClose }) {
+  const [draft, setDraft] = useState(() => ({ ...cue, anchor: cue.anchor ?? 'bar' }))
   const [recording, setRecording] = useState(null)
   const [recSeconds, setRecSeconds] = useState(0)
   const [newBlob, setNewBlob] = useState(null)
@@ -26,6 +31,17 @@ export function CueSheet({ cue, project, timeline, lastBar, isNew, onSave, onDel
   const set = (patch) => setDraft((d) => ({ ...d, ...patch }))
   const firstBar = timeline.bars[0]?.bar ?? 1
   const beatsInBar = timeline.bars.find((b) => b.bar === draft.bar)?.num ?? 4
+  const byTime = isTimeCue(draft)
+  const maxTime = Math.max(0, timeline.duration)
+  const round = (t) => Math.round(Math.min(maxTime, Math.max(0, t)) * 10) / 10
+  const timePos = byTime ? barBeatAt(timeline, draft.time ?? 0) : null
+
+  // Al cambiar el anclaje conserva el instante donde suena el cue
+  const setAnchor = (anchor) => {
+    if (anchor === draft.anchor) return
+    if (anchor === 'time') set({ anchor, time: round(cueTime(timeline, draft) ?? 0) })
+    else set({ anchor, ...barBeatAt(timeline, draft.time ?? 0) })
+  }
 
   useEffect(() => {
     if (!recording) return
@@ -92,7 +108,9 @@ export function CueSheet({ cue, project, timeline, lastBar, isNew, onSave, onDel
   }
 
   const save = async () => {
-    let out = { ...draft, bar: Math.min(draft.bar, lastBar), beat: Math.min(draft.beat, beatsInBar) }
+    let out = byTime
+      ? { ...draft, time: round(draft.time ?? 0) }
+      : { ...draft, bar: Math.min(draft.bar, lastBar), beat: Math.min(draft.beat, beatsInBar) }
     if (newBlob) {
       const id = uid()
       await putBlob(id, newBlob)
@@ -133,10 +151,44 @@ export function CueSheet({ cue, project, timeline, lastBar, isNew, onSave, onDel
         </>
       }
     >
-      <div className="grid-2">
-        <Stepper label="Compás" value={draft.bar} min={firstBar} max={lastBar} onChange={(v) => set({ bar: v })} />
-        <Stepper label="Tiempo" value={Math.min(draft.beat, beatsInBar)} min={1} max={beatsInBar} onChange={(v) => set({ beat: v })} />
+      <div className="segmented" role="radiogroup" aria-label="Anclar el cue a">
+        {ANCHORS.map(([k, label]) => (
+          <button key={k} role="radio" aria-checked={draft.anchor === k} className={draft.anchor === k ? 'is-active' : ''} onClick={() => setAnchor(k)}>
+            {label}
+          </button>
+        ))}
       </div>
+
+      {byTime ? (
+        <>
+          <Stepper
+            label="Posición"
+            value={round(draft.time ?? 0)}
+            min={0}
+            max={maxTime}
+            step={0.1}
+            suffix="s"
+            onChange={(v) => set({ time: round(v) })}
+          />
+          <div className="cue-anchor-info">
+            <span className="muted">
+              {formatTimePrecise(draft.time ?? 0)} · cae en c.{timePos.bar}:{timePos.beat}
+            </span>
+            <button className="btn" onClick={() => set({ time: round(currentTime) })}>
+              Usar cursor ({formatTimePrecise(currentTime)})
+            </button>
+          </div>
+          <p className="hint">No se mueve si cambias el tempo o la estructura.</p>
+        </>
+      ) : (
+        <>
+          <div className="grid-2">
+            <Stepper label="Compás" value={draft.bar} min={firstBar} max={lastBar} onChange={(v) => set({ bar: v })} />
+            <Stepper label="Tiempo" value={Math.min(draft.beat, beatsInBar)} min={1} max={beatsInBar} onChange={(v) => set({ beat: v })} />
+          </div>
+          <p className="hint">Sigue al compás: si cambias el tempo, el cue se mueve con la música.</p>
+        </>
+      )}
 
       <div className="segmented" role="radiogroup" aria-label="Tipo de cue">
         {KINDS.map(([k, label]) => (

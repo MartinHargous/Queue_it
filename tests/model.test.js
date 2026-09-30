@@ -1,6 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { newProject, newSection, buildTimeline, cueTime, buildEvents, beatIndexAt, newGrid } from '../src/lib/model.js'
+import { newProject, newSection, newCue, newTimeCue, buildTimeline, cueTime, cueBarBeat, buildEvents, beatIndexAt, newGrid, sortCues, skipTarget } from '../src/lib/model.js'
 
 const near = (a, b, eps = 1e-9) => assert.ok(Math.abs(a - b) < eps, `${a} ≉ ${b}`)
 
@@ -91,4 +91,42 @@ test('grilla detectada: downbeat elige el primer tiempo del compás', () => {
   assert.equal(tl.beats[2].bar, 1)
   assert.equal(tl.beats[2].beat, 1)
   assert.equal(tl.beats[0].bar, 0) // anacrusa
+})
+
+test('un cue fijo en segundos no se mueve al cambiar el tempo', () => {
+  const p = newProject('metronome')
+  p.sections = [{ ...newSection(), bars: 8, bpm: 120, num: 4, den: 4 }]
+  const cue = newTimeCue(4.5)
+  p.cues = [cue]
+  near(cueTime(buildTimeline(p), cue), 4.5)
+  assert.deepEqual(cueBarBeat(buildTimeline(p), cue), { bar: 3, beat: 2 })
+  p.sections[0].bpm = 60
+  near(cueTime(buildTimeline(p), cue), 4.5)
+  assert.deepEqual(cueBarBeat(buildTimeline(p), cue), { bar: 2, beat: 1 })
+  assert.equal(buildEvents(p, buildTimeline(p)).find((e) => e.type === 'cue').t, 4.5)
+})
+
+test('un cue fijo más allá del final queda fuera', () => {
+  const p = newProject('metronome')
+  p.sections = [{ ...newSection(), bars: 1, bpm: 120, num: 4, den: 4 }]
+  assert.equal(cueTime(buildTimeline(p), newTimeCue(10)), null)
+})
+
+test('sortCues ordena por instante real mezclando anclajes', () => {
+  const p = newProject('metronome')
+  p.sections = [{ ...newSection(), bars: 4, bpm: 120, num: 4, den: 4 }]
+  const tl = buildTimeline(p)
+  const a = { ...newCue(3, 1), id: 'a' } // 4 s
+  const b = { ...newTimeCue(1), id: 'b' }
+  assert.deepEqual(sortCues([a, b], tl).map((c) => c.id), ['b', 'a'])
+})
+
+test('skipTarget salta al compás siguiente o anterior', () => {
+  const p = newProject('metronome')
+  p.sections = [{ ...newSection(), bars: 4, bpm: 120, num: 4, den: 4 }] // compases cada 2 s
+  const tl = buildTimeline(p)
+  near(skipTarget(tl, 3, 1), 4)
+  near(skipTarget(tl, 3, -1), 2)
+  near(skipTarget(tl, 2.2, -1), 0) // recién empezado el compás: va al anterior
+  near(skipTarget(tl, 7, 1), 7) // último compás: no avanza más
 })

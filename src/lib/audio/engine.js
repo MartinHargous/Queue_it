@@ -90,6 +90,7 @@ export class Player {
   async play(project, timeline, res, fromTime = 0, onEnd = null) {
     this.stop()
     this.onEnd = onEnd
+    this.args = { project, timeline, res }
     const ctx = await resumeContext()
     this.ctx = ctx
     this.buses = createBuses(ctx, project.mix)
@@ -129,6 +130,13 @@ export class Player {
       this.stop()
       this.onEnd?.()
     }
+  }
+
+  // Salta a otro instante sin volver a preparar los recursos
+  async seek(t) {
+    if (!this.playing || !this.args) return
+    const { project, timeline, res } = this.args
+    await this.play(project, timeline, res, Math.max(0, t), this.onEnd)
   }
 
   get position() {

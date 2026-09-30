@@ -36,9 +36,17 @@ export function newProject(kind) {
   }
 }
 
+// anchor: 'time' = fijo en segundos (no se mueve si cambia el tempo)
+//         'bar'  = anclado a compás:tiempo (sigue a la estructura). Cues sin `anchor` son 'bar'.
 export function newCue(bar = 1, beat = 1) {
-  return { id: uid(), bar, beat, kind: 'tts', text: '', blobId: null, gain: 1 }
+  return { id: uid(), anchor: 'bar', time: null, bar, beat, kind: 'tts', text: '', blobId: null, gain: 1 }
 }
+
+export function newTimeCue(time = 0) {
+  return { ...newCue(), anchor: 'time', time: Math.max(0, Math.round(time * 10) / 10) }
+}
+
+export const isTimeCue = (cue) => cue.anchor === 'time'
 
 export function newGrid({ bpm = 120, offset = 0, beats = [], downbeat = 0, num = 4 } = {}) {
   return { mode: beats.length ? 'detected' : 'fixed', bpm, offset, num, beats, downbeat, nudge: 0 }
@@ -120,6 +128,10 @@ function gridTimeline(grid, duration) {
 }
 
 export function cueTime(timeline, cue) {
+  if (isTimeCue(cue)) {
+    const t = cue.time ?? 0
+    return t >= 0 && t <= timeline.duration + 0.001 ? t : null
+  }
   const b = timeline.beats.find((x) => x.bar === cue.bar && x.beat === cue.beat)
   return b ? b.t : null
 }
@@ -143,8 +155,45 @@ export function barStartTime(timeline, bar) {
   return b ? b.t : 0
 }
 
-export function sortCues(cues) {
-  return [...cues].sort((a, b) => a.bar - b.bar || a.beat - b.beat)
+// Compás y tiempo en que cae un instante (para mostrar cues fijos en segundos)
+export function barBeatAt(timeline, t) {
+  const i = beatIndexAt(timeline, t)
+  const b = timeline.beats[Math.max(0, i)]
+  return b ? { bar: b.bar, beat: i < 0 ? 1 : b.beat } : { bar: 1, beat: 1 }
+}
+
+// Compás:tiempo en que suena un cue, sea cual sea su anclaje
+export function cueBarBeat(timeline, cue) {
+  if (!isTimeCue(cue)) return { bar: cue.bar, beat: cue.beat }
+  return barBeatAt(timeline, cue.time ?? 0)
+}
+
+// Destino de los botones de adelantar/retroceder: inicio del compás siguiente o anterior.
+// Retroceder dentro del primer medio segundo de un compás salta al anterior (se puede tocar varias veces).
+export function skipTarget(timeline, t, dir) {
+  const starts = timeline.bars.map((b) => b.t)
+  if (starts[0] > 0.001) starts.unshift(0)
+  if (!starts.length) return Math.max(0, t + dir * 5)
+  if (dir > 0) {
+    const next = starts.find((s) => s > t + 0.05)
+    return next ?? t
+  }
+  let prev = 0
+  for (const s of starts) if (s < t - 0.5) prev = s
+  return prev
+}
+
+export function sortCues(cues, timeline) {
+  if (!timeline) return [...cues].sort((a, b) => a.bar - b.bar || a.beat - b.beat)
+  const key = (c) => cueTime(timeline, c) ?? Infinity
+  return [...cues].sort((a, b) => key(a) - key(b))
+}
+
+export function formatTimePrecise(s) {
+  if (!isFinite(s) || s < 0) s = 0
+  const m = Math.floor(s / 60)
+  const sec = (s - m * 60).toFixed(1).padStart(4, '0')
+  return `${m}:${sec}`
 }
 
 // Eventos compartidos por el reproductor en vivo y el render offline
@@ -172,22 +221,23 @@ export function formatTime(s) {
 
 export function cheatSheetText(project, timeline) {
   const lines = [project.title, '']
-  const cues = sortCues(project.cues)
+  const cues = sortCues(project.cues, timeline).map((c) => ({ ...c, pos: cueBarBeat(timeline, c), t: cueTime(timeline, c) }))
   if (project.kind === 'metronome') {
     let bar = 1
     project.sections.forEach((s) => {
       const end = bar + s.bars - 1
       const tempo = s.bpmEnd && s.bpmEnd !== s.bpm ? `${s.bpm}→${s.bpmEnd}` : `${s.bpm}`
       lines.push(`[${s.name}]  compases ${bar}–${end}  ·  ${s.num}/${s.den}  ·  ${tempo} bpm`)
-      cues.filter((c) => c.bar >= bar && c.bar <= end).forEach((c) => lines.push(`   c.${c.bar}:${c.beat}  ${c.text || '(grabación)'}`))
+      cues
+        .filter((c) => c.t != null && c.pos.bar >= bar && c.pos.bar <= end)
+        .forEach((c) => lines.push(`   c.${c.pos.bar}:${c.pos.beat}  (${formatTime(c.t)})  ${c.text || '(grabación)'}`))
       bar = end + 1
     })
   } else {
     const g = project.grid
     if (g) lines.push(`Tempo aprox. ${Math.round(g.bpm)} bpm  ·  ${g.num}/4`, '')
-    cues.forEach((c) => {
-      const t = cueTime(timeline, c)
-      lines.push(`c.${c.bar}:${c.beat}  (${formatTime(t)})  ${c.text || '(grabación)'}`)
+    cues.filter((c) => c.t != null).forEach((c) => {
+      lines.push(`c.${c.pos.bar}:${c.pos.beat}  (${formatTime(c.t)})  ${c.text || '(grabación)'}`)
     })
   }
   lines.push('', `Duración ${formatTime(timeline.duration)}  ·  hecho con Queue it`)
