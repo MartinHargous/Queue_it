@@ -345,6 +345,7 @@ p {
 /* secciones */
 .stack {
   display: grid;
+  grid-template-columns: minmax(0, 1fr); /* un texto largo no ensancha el panel */
   gap: 14px;
 }
 .section {
@@ -438,12 +439,12 @@ input[type='range'] {
 }
 .grid-2 {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: 12px;
 }
 .grid-3 {
   display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 8px;
 }
 .grid-3 .btn {
@@ -651,6 +652,7 @@ input[type='range'] {
   gap: 12px;
 }
 .audio-name {
+  min-width: 0;
   font-weight: 700;
   overflow: hidden;
   text-overflow: ellipsis;
