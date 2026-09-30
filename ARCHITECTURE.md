@@ -31,11 +31,13 @@ Queue it es una PWA para músicos que arma **guías de ensayo y de escenario**: 
 
 ```
 src/
-  App.jsx                 rutas por hash (#/ y #/p/<id>)
+  App.jsx                 rutas por hash (#/, #/listas, #/p/<id>, #/l/<id>)
   main.jsx                entrada, fuentes, estilos
   styles/app.css          tokens de diseño y estilos
   components/
-    Home.jsx              lista de pistas, crear, importar
+    Home.jsx              pestañas Pistas / Listas, crear, importar
+    SetlistView.jsx       lista de reproducción: orden, agregar canciones, opciones
+    SetlistPlayer.jsx     reproduce la lista canción tras canción (modo escenario)
     Editor.jsx            pantalla principal: pestañas + transporte
     TrackMap.jsx          mapa de la pista a escala (tocar = ir al compás)
     SectionsPanel.jsx     secciones de metrónomo (tempo, compás, accel./rit.)
@@ -112,6 +114,19 @@ Un proyecto es un objeto JSON guardado en el store `projects`. Los audios (pista
 
 **Audio.** En modo `detected` usa los tiempos de pulso detectados, y `downbeat` indica cuál es el primer tiempo del compás 1 (los anteriores forman una anacrusa, compás 0). En modo `fixed` genera una grilla regular desde `offset` con el BPM indicado. `nudge` desplaza toda la grilla unos milisegundos.
 
+## Cuenta inicial
+
+`project.countIn = { enabled, bars, mode: 'auto' | 'manual', bpm, num }`. `countInPlan(project, timeline, from)` devuelve los clicks de la cuenta en tiempo de la canción (antes de `from`) y el silencio previo (`lead`) que hay que agregar.
+
+- **Automática:** toma tempo y compás del pulso siguiente a `from` (secciones del metrónomo o grilla del audio) y queda en fase con la grilla: termina justo un pulso antes de que entre la música y marca el tiempo 1 donde corresponde.
+- **Manual:** tempo y tiempos por compás elegidos por el usuario; termina en `from`.
+
+Suena al tocar reproducir (no al saltar), en el editor y en las listas, y se puede incluir en el WAV exportado. En pantalla se ve el número de la cuenta en ámbar.
+
+## Listas de reproducción
+
+Store `setlists` (IndexedDB versión 2): `{ id, name, items: [projectId], autoAdvance, gap }`. Las canciones se reordenan con subir/bajar y una pista puede repetirse. Si una pista se elimina, desaparece de la lista sin romperla. `SetlistPlayer` prepara la canción siguiente mientras suena la actual, toca la cuenta inicial de cada una y, con "Pasar sola a la siguiente", espera `gap` segundos y sigue.
+
 ## Motor de audio
 
 **Eventos compartidos.** `buildEvents()` genera la lista ordenada de clicks y cues. El `Player` y el render offline consumen exactamente la misma lista, así lo que se escucha en vivo es lo mismo que se exporta.
@@ -174,13 +189,14 @@ Selector ES / EN / PT en la pantalla de inicio. Por defecto usa el idioma del te
 
 ## Persistencia
 
-IndexedDB `queue-it`, versión 1:
+IndexedDB `queue-it`, versión 2:
 
 | Store | Clave | Contenido |
 |---|---|---|
 | `projects` | `id` | Objeto proyecto |
 | `blobs` | `blobId` | `Blob` del audio subido o de las grabaciones |
 | `tts` | `voz\|vel\|tono\|texto` | `ArrayBuffer` WAV de frases sintetizadas |
+| `setlists` | `id` | Listas de reproducción |
 
 El autoguardado usa un debounce de 400 ms y además guarda al salir de la pantalla o al pasar la app a segundo plano. Al iniciar se llama a `navigator.storage.persist()` para que Android no borre los datos por falta de espacio. Al eliminar una pista se descarta cualquier guardado pendiente (`discard`) para que el debounce no la vuelva a crear. Aun así conviene exportar respaldos.
 

@@ -1,7 +1,7 @@
 import { getContext, resumeContext, decodeBlob } from './context.js'
 import { clickBuffer } from './clicks.js'
 import { ttsBuffer } from './tts.js'
-import { buildEvents, beatIndexAt } from '../model.js'
+import { buildEvents, beatIndexAt, countInPlan } from '../model.js'
 import { getBlob } from '../db.js'
 import { cueVoice } from './voices.js'
 import { t } from '../i18n.js'
@@ -89,14 +89,15 @@ export class Player {
     this.onEnd = null
   }
 
-  async play(project, timeline, res, fromTime = 0, onEnd = null) {
+  // opts.countIn: toca la cuenta inicial de la pista antes de empezar (no al saltar)
+  async play(project, timeline, res, fromTime = 0, onEnd = null, opts = {}) {
     this.stop()
     this.ctx = await resumeContext()
-    this.start(project, timeline, res, fromTime, onEnd)
+    this.start(project, timeline, res, fromTime, onEnd, opts.countIn ? countInPlan(project, timeline, fromTime) : null)
   }
 
   // Parte sincrónica: no deja un instante sin reproducir (importante al saltar repetidamente)
-  start(project, timeline, res, fromTime, onEnd) {
+  start(project, timeline, res, fromTime, onEnd, plan = null) {
     this.stop()
     this.onEnd = onEnd
     this.args = { project, timeline, res }
@@ -106,7 +107,12 @@ export class Player {
     this.res = res
     this.from = fromTime
     this.lastPos = fromTime
-    this.ctxStart = ctx.currentTime + 0.12
+    this.ctxStart = ctx.currentTime + 0.12 + (plan?.lead ?? 0)
+    this.count = plan?.clicks.length ? plan.clicks : null
+    for (const c of this.count ?? []) {
+      const node = scheduleEvent(ctx, this.buses, { type: 'click', accent: c.accent }, this.ctxStart + (c.t - fromTime), res)
+      if (node) this.nodes.add(node)
+    }
     let tail = 0.5
     for (const b of res.cueBuffers.values()) tail = Math.max(tail, b.duration + 0.1) // deja terminar el último cue
     this.end = Math.max(timeline.duration, res.track?.duration ?? 0) + tail
@@ -151,6 +157,16 @@ export class Player {
   // Lo que suena ahora por el parlante. En Android `currentTime` avanza a saltos
   // (bloques de audio grandes), así que se interpola con el reloj de alta precisión:
   // getOutputTimestamp dice qué instante del contexto sonó en qué momento de performance.now().
+  // Durante la cuenta inicial: { n, of } del pulso que suena; si no, null
+  get countIn() {
+    if (!this.playing || !this.count) return null
+    const s = this.from + (this.ctx.currentTime - (this.ctx.outputLatency || this.ctx.baseLatency || 0) - this.ctxStart)
+    if (s >= this.from) return null // ya entró la música
+    let cur = null
+    for (const c of this.count) if (c.t <= s + 0.02) cur = c
+    return cur ? { n: cur.n, of: cur.of } : null
+  }
+
   get position() {
     if (!this.playing || !this.ctx) return this.from
     let now
@@ -189,20 +205,23 @@ export class Player {
 }
 
 // Render completo a un AudioBuffer (para exportar)
-export async function renderProject(project, timeline, res, { click = true, cues = true, track = true } = {}) {
+export async function renderProject(project, timeline, res, { click = true, cues = true, track = true, countIn = false } = {}) {
   const sr = 44100
+  const plan = countIn ? countInPlan(project, timeline, 0) : { clicks: [], lead: 0 }
+  const lead = plan.lead // la cuenta inicial corre todo hacia adelante
   let tail = 0.4
   for (const b of res.cueBuffers.values()) tail = Math.max(tail, b.duration)
-  const dur = Math.max(timeline.duration + tail, track && res.track ? res.track.duration : 0)
+  const dur = lead + Math.max(timeline.duration + tail, track && res.track ? res.track.duration : 0)
   const ctx = new OfflineAudioContext(2, Math.ceil(dur * sr), sr)
   const buses = createBuses(ctx, project.mix)
   if (track && res.track) {
     const src = ctx.createBufferSource()
     src.buffer = res.track
     src.connect(buses.track)
-    src.start(0)
+    src.start(lead)
   }
-  for (const e of buildEvents(project, timeline, { click, cues })) scheduleEvent(ctx, buses, e, e.t, res)
+  for (const c of plan.clicks) scheduleEvent(ctx, buses, { type: 'click', accent: c.accent }, lead + c.t, res)
+  for (const e of buildEvents(project, timeline, { click, cues })) scheduleEvent(ctx, buses, e, lead + e.t, res)
   return ctx.startRendering()
 }
 

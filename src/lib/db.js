@@ -1,10 +1,13 @@
 import { openDB } from 'idb'
 
-const dbp = openDB('queue-it', 1, {
-  upgrade(db) {
-    db.createObjectStore('projects', { keyPath: 'id' })
-    db.createObjectStore('blobs')
-    db.createObjectStore('tts')
+const dbp = openDB('queue-it', 2, {
+  upgrade(db, oldVersion) {
+    if (oldVersion < 1) {
+      db.createObjectStore('projects', { keyPath: 'id' })
+      db.createObjectStore('blobs')
+      db.createObjectStore('tts')
+    }
+    if (oldVersion < 2) db.createObjectStore('setlists', { keyPath: 'id' }) // listas de reproducción
   },
 })
 
@@ -29,6 +32,14 @@ export function projectBlobIds(p) {
   for (const c of p.cues) if (c.blobId) ids.push(c.blobId)
   return ids
 }
+
+export async function listSetlists() {
+  const all = await (await dbp).getAll('setlists')
+  return all.sort((a, b) => b.updatedAt - a.updatedAt)
+}
+export const getSetlist = async (id) => (await dbp).get('setlists', id)
+export const saveSetlist = async (l) => (await dbp).put('setlists', { ...l, updatedAt: Date.now() })
+export const deleteSetlist = async (id) => (await dbp).delete('setlists', id)
 
 export const getBlob = async (id) => (await dbp).get('blobs', id)
 export const putBlob = async (id, blob) => (await dbp).put('blobs', blob, id)

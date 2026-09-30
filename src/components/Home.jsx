@@ -1,13 +1,13 @@
 import { useEffect, useRef, useState } from 'react'
-import { listProjects, saveProject, putBlob } from '../lib/db.js'
-import { newProject, buildTimeline, formatTime, uid } from '../lib/model.js'
+import { listProjects, saveProject, putBlob, listSetlists, saveSetlist } from '../lib/db.js'
+import { newProject, newSetlist, buildTimeline, formatTime, uid } from '../lib/model.js'
 import { importProjectFile } from '../lib/share.js'
 import { decodeBlob } from '../lib/audio/context.js'
 import { Sheet } from './Sheet.jsx'
 import { Icon } from './icons.jsx'
 import { t, tn, useLang, setLang, LANGS } from '../lib/i18n.js'
 
-export function Home({ go }) {
+export function Home({ go, goList, tab = 'tracks', setTab }) {
   const lang = useLang()
   const [projects, setProjects] = useState(null)
   const [creating, setCreating] = useState(false)
@@ -16,9 +16,18 @@ export function Home({ go }) {
   const audioInput = useRef(null)
   const importInput = useRef(null)
 
+  const [setlists, setSetlists] = useState(null)
+
   useEffect(() => {
     listProjects().then(setProjects)
+    listSetlists().then(setSetlists)
   }, [])
+
+  const createSetlist = async () => {
+    const l = newSetlist(t('Lista {n}', { n: (setlists?.length ?? 0) + 1 }))
+    await saveSetlist(l)
+    goList(l.id)
+  }
 
   const createMetronome = async () => {
     const p = newProject('metronome')
@@ -74,6 +83,45 @@ export function Home({ go }) {
         </div>
       </header>
 
+      <nav className="tabs" role="tablist">
+        {[
+          ['tracks', 'Pistas'],
+          ['lists', 'Listas'],
+        ].map(([k, label]) => (
+          <button key={k} role="tab" aria-selected={tab === k} className={tab === k ? 'is-active' : ''} onClick={() => setTab(k)}>
+            {t(label)}
+            {k === 'lists' && setlists?.length > 0 && <span className="tab-count">{setlists.length}</span>}
+          </button>
+        ))}
+      </nav>
+
+      {tab === 'lists' ? (
+        <main className="home-list">
+          {setlists && setlists.length === 0 && (
+            <div className="empty">
+              <p className="empty-title">{t('Sin listas todavía')}</p>
+              <p className="muted">{t('Una lista junta varias pistas en orden para tocarlas seguidas, por ejemplo el repertorio de un show.')}</p>
+            </div>
+          )}
+          <ul className="project-list">
+            {setlists?.map((l) => (
+              <li key={l.id}>
+                <button className="project-row" onClick={() => goList(l.id)}>
+                  <span className="project-kind" aria-hidden="true">
+                    <Icon name="list" />
+                  </span>
+                  <span className="project-main">
+                    <span className="project-title">{l.name}</span>
+                    <span className="project-meta">
+                      {l.items.length} {tn(l.items.length, 'canción', 'canciones')}
+                    </span>
+                  </span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        </main>
+      ) : (
       <main className="home-list">
         {error && (
           <p className="notice is-error" role="alert">
@@ -107,11 +155,18 @@ export function Home({ go }) {
           ))}
         </ul>
       </main>
+      )}
 
       <div className="bottom-action">
-        <button className="btn btn-primary btn-block" onClick={() => setCreating(true)} disabled={!!busy}>
-          <Icon name="plus" /> {busy ?? t('Nueva pista')}
-        </button>
+        {tab === 'lists' ? (
+          <button className="btn btn-primary btn-block" onClick={createSetlist}>
+            <Icon name="plus" /> {t('Nueva lista')}
+          </button>
+        ) : (
+          <button className="btn btn-primary btn-block" onClick={() => setCreating(true)} disabled={!!busy}>
+            <Icon name="plus" /> {busy ?? t('Nueva pista')}
+          </button>
+        )}
       </div>
 
       <input ref={audioInput} type="file" accept="audio/*" hidden onChange={(e) => { createFromAudio(e.target.files[0]); e.target.value = '' }} />

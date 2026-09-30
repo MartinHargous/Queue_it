@@ -4,12 +4,14 @@ import { ttsBuffer } from '../lib/audio/tts.js'
 import { resumeContext } from '../lib/audio/context.js'
 import { VOICES, VARIANTS } from '../lib/audio/voices.js'
 import { t, useLang } from '../lib/i18n.js'
+import { countInSettings, autoCountIn } from '../lib/model.js'
+import { Stepper } from './Stepper.jsx'
 
 // Frase de prueba en el idioma de la voz elegida
 const SAMPLE = { es: 'Coro en dos. Uno, dos.', en: 'Chorus in two. One, two.', pt: 'Refrão em dois. Um, dois.', fr: 'Refrain dans deux. Un, deux.', it: 'Ritornello tra due. Uno, due.', de: 'Refrain in zwei. Eins, zwei.' }
 const sampleFor = (voice) => SAMPLE[voice.split('/').pop().slice(0, 2)] ?? SAMPLE.en
 
-export function SettingsPanel({ project, update, player, onBeforeDelete, onDeleted }) {
+export function SettingsPanel({ project, update, timeline, player, onBeforeDelete, onDeleted }) {
   useLang()
   const [confirm, setConfirm] = useState(false)
   const [testing, setTesting] = useState(false)
@@ -53,6 +55,8 @@ export function SettingsPanel({ project, update, player, onBeforeDelete, onDelet
         )}
         <Slider label={t('Cues')} value={mix.cues} onChange={(v) => setMix('cues', v)} />
       </section>
+
+      <CountInGroup project={project} update={update} timeline={timeline} />
 
       <section className="group">
         <h3>{t('Voz sintética')}</h3>
@@ -129,5 +133,58 @@ function Slider({ label, value, onChange, min = 0, max = 1.5, step = 0.05 }) {
       <span>{label}</span>
       <input type="range" min={min} max={max} step={step} value={value} onChange={(e) => onChange(Number(e.target.value))} />
     </label>
+  )
+}
+
+// Cuenta inicial ("partida por metrónomo") antes de que empiece la canción
+function CountInGroup({ project, update, timeline }) {
+  const ci = countInSettings(project)
+  const auto = autoCountIn(timeline, 0)
+  const set = (patch) => update((p) => ({ ...p, countIn: { ...countInSettings(p), ...patch } }))
+  return (
+    <section className="group">
+      <h3>{t('Cuenta inicial')}</h3>
+      <label className="toggle">
+        <input type="checkbox" checked={ci.enabled} onChange={(e) => set({ enabled: e.target.checked })} />
+        <span>{t('Contar con el metrónomo antes de empezar')}</span>
+      </label>
+      {ci.enabled && (
+        <>
+          <Stepper label={t('Compases de cuenta')} value={ci.bars} min={1} max={4} onChange={(v) => set({ bars: v })} />
+          <div className="segmented" role="radiogroup" aria-label={t('Tempo de la cuenta')}>
+            {[
+              ['auto', 'Automática'],
+              ['manual', 'Manual'],
+            ].map(([k, label]) => (
+              <button key={k} role="radio" aria-checked={ci.mode === k} className={ci.mode === k ? 'is-active' : ''} onClick={() => set({ mode: k })}>
+                {t(label)}
+              </button>
+            ))}
+          </div>
+          {ci.mode === 'auto' ? (
+            <p className="hint">
+              {auto
+                ? t('Usa el tempo y el compás de la pista ({num} tiempos a {bpm} bpm) y entra a tiempo con la música.', {
+                    num: auto.num,
+                    bpm: Math.round(auto.bpm * 10) / 10,
+                  })
+                : t('Todavía no hay tempo en la pista: se usa el manual.')}
+            </p>
+          ) : (
+            <>
+              <div className="grid-2">
+                <Stepper label={t('Tempo')} value={ci.bpm} min={30} max={300} suffix="bpm" onChange={(v) => set({ bpm: v })} />
+                <Stepper label={t('Tiempos por compás')} value={ci.num} min={1} max={16} onChange={(v) => set({ num: v })} />
+              </div>
+              {auto && (
+                <button className="btn btn-ghost" onClick={() => set({ bpm: Math.round(auto.bpm), num: auto.num })}>
+                  {t('Copiar lo detectado ({num}/4, {bpm} bpm)', { num: auto.num, bpm: Math.round(auto.bpm) })}
+                </button>
+              )}
+            </>
+          )}
+        </>
+      )}
+    </section>
   )
 }

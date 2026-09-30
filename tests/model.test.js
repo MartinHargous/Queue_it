@@ -1,6 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { newProject, newSection, newCue, newTimeCue, buildTimeline, cueTime, cueBarBeat, buildEvents, beatIndexAt, newGrid, sortCues, skipTarget } from '../src/lib/model.js'
+import { newProject, newSection, newCue, newTimeCue, buildTimeline, cueTime, cueBarBeat, buildEvents, beatIndexAt, newGrid, sortCues, skipTarget, countInPlan, moveItem, newSetlist } from '../src/lib/model.js'
 
 const near = (a, b, eps = 1e-9) => assert.ok(Math.abs(a - b) < eps, `${a} ≉ ${b}`)
 
@@ -129,4 +129,47 @@ test('skipTarget salta al compás siguiente o anterior', () => {
   near(skipTarget(tl, 3, -1), 2)
   near(skipTarget(tl, 2.2, -1), 0) // recién empezado el compás: va al anterior
   near(skipTarget(tl, 7, 1), 7) // último compás: no avanza más
+})
+
+test('cuenta inicial automática: un compás al tempo de la sección, termina en el compás 1', () => {
+  const p = newProject('metronome')
+  p.sections = [{ ...newSection(), bars: 4, bpm: 120, num: 3, den: 4 }]
+  p.countIn = { enabled: true, bars: 1, mode: 'auto' }
+  const { clicks, lead } = countInPlan(p, buildTimeline(p), 0)
+  assert.equal(clicks.length, 3)
+  near(clicks[0].t, -1.5)
+  near(lead, 1.5)
+  assert.deepEqual(clicks.map((c) => c.accent), [1, 3, 3])
+  assert.deepEqual(clicks.map((c) => c.n), [1, 2, 3])
+})
+
+test('cuenta inicial automática en audio: queda en fase con la grilla detectada', () => {
+  const p = newProject('audio')
+  p.audio = { blobId: 'a', name: 'x', mime: 'audio/wav', duration: 10 }
+  p.grid = newGrid({ bpm: 120, beats: [0.3, 0.8, 1.3, 1.8, 2.3, 2.8], downbeat: 0, num: 4 })
+  p.countIn = { enabled: true, bars: 2, mode: 'auto' }
+  const { clicks, lead } = countInPlan(p, buildTimeline(p), 0)
+  assert.equal(clicks.length, 8)
+  near(clicks.at(-1).t, -0.2) // un pulso antes del primer tiempo (0,3 s)
+  near(lead, 3.7)
+  assert.equal(clicks[0].accent, 1)
+  assert.equal(clicks[4].accent, 1)
+})
+
+test('cuenta inicial manual y desactivada', () => {
+  const p = newProject('metronome')
+  const tl = buildTimeline(p)
+  assert.deepEqual(countInPlan(p, tl, 0), { clicks: [], lead: 0 })
+  p.countIn = { enabled: true, bars: 1, mode: 'manual', bpm: 60, num: 2 }
+  const plan = countInPlan(p, tl, 5)
+  assert.deepEqual(plan.clicks.map((c) => c.t), [3, 4])
+  near(plan.lead, 2)
+})
+
+test('listas: mover canciones respeta los bordes', () => {
+  assert.deepEqual(moveItem(['a', 'b', 'c'], 0, 1), ['b', 'a', 'c'])
+  assert.deepEqual(moveItem(['a', 'b', 'c'], 2, -1), ['a', 'c', 'b'])
+  const same = ['a', 'b']
+  assert.equal(moveItem(same, 0, -1), same)
+  assert.equal(newSetlist('Show').items.length, 0)
 })

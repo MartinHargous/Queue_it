@@ -39,6 +39,21 @@ export function newProject(kind) {
 
 // anchor: 'time' = fijo en segundos (no se mueve si cambia el tempo)
 //         'bar'  = anclado a compás:tiempo (sigue a la estructura). Cues sin `anchor` son 'bar'.
+// Lista de reproducción: canciones (ids de pistas) en orden
+export function newSetlist(name) {
+  const now = Date.now()
+  return { id: uid(), name, items: [], autoAdvance: true, gap: 3, createdAt: now, updatedAt: now }
+}
+
+// Mueve el elemento i una posición (d = -1 arriba, +1 abajo)
+export function moveItem(arr, i, d) {
+  const j = i + d
+  if (j < 0 || j >= arr.length) return arr
+  const out = [...arr]
+  ;[out[i], out[j]] = [out[j], out[i]]
+  return out
+}
+
 export function newCue(bar = 1, beat = 1) {
   return { id: uid(), anchor: 'bar', time: null, bar, beat, kind: 'tts', text: '', blobId: null, gain: 1 }
 }
@@ -195,6 +210,56 @@ export function formatTimePrecise(s) {
   const m = Math.floor(s / 60)
   const sec = (s - m * 60).toFixed(1).padStart(4, '0')
   return `${m}:${sec}`
+}
+
+// Cuenta inicial ("partida por metrónomo") antes de empezar a sonar.
+// mode 'auto': toma tempo y compás de la pista (secciones o pulso detectado) y queda en fase
+//              con la grilla, terminando justo antes del pulso siguiente a `from`.
+// mode 'manual': tempo y tiempos por compás indicados por el usuario; termina en `from`.
+export const DEFAULT_COUNT_IN = { enabled: false, bars: 1, mode: 'auto', bpm: 120, num: 4 }
+
+export const countInSettings = (project) => ({ ...DEFAULT_COUNT_IN, ...project.countIn })
+
+// Tempo y compás que usaría la cuenta automática desde `from`
+export function autoCountIn(timeline, from = 0) {
+  const bs = timeline.beats
+  let i = beatIndexAt(timeline, from - 0.001) + 1
+  if (i <= 0) i = 0
+  const b = bs[Math.min(i, bs.length - 1)]
+  if (!b) return null
+  const next = bs[bs.indexOf(b) + 1]
+  const period = next ? next.t - b.t : 60 / (b.bpm || 120)
+  return { beat: b, period, bpm: 60 / period, num: b.num }
+}
+
+// Devuelve { clicks: [{ t, accent, n, of }], lead } en tiempo de la canción (t < from).
+// lead = segundos de silencio previo que hay que agregar para que suene la cuenta.
+export function countInPlan(project, timeline, from = 0) {
+  const ci = countInSettings(project)
+  if (!ci.enabled) return { clicks: [], lead: 0 }
+  let period
+  let num
+  let target // instante en que "entra" la música
+  let phase // tiempo del compás (1..num) que cae en `target`
+  const auto = ci.mode === 'auto' ? autoCountIn(timeline, from) : null
+  if (auto && auto.beat.t >= from - 0.001) {
+    period = auto.period
+    num = auto.num
+    target = auto.beat.t
+    phase = auto.beat.beat
+  } else {
+    period = 60 / (auto?.bpm ?? ci.bpm)
+    num = auto?.num ?? ci.num
+    target = from
+    phase = 1
+  }
+  const total = Math.max(1, Math.round(ci.bars)) * num
+  const clicks = []
+  for (let k = total; k >= 1; k--) {
+    const pos = (((phase - 1 - k) % num) + num) % num // 0 = tiempo 1 del compás
+    clicks.push({ t: target - k * period, accent: pos === 0 ? 1 : 3, n: pos + 1, of: num })
+  }
+  return { clicks, lead: Math.max(0, from - clicks[0].t) }
 }
 
 // Eventos compartidos por el reproductor en vivo y el render offline

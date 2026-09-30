@@ -36,6 +36,7 @@ export function Editor({ id, goHome }) {
   const [toast, setToast] = useState(null)
   const [editingTitle, setEditingTitle] = useState(false)
   const [scrub, setScrub] = useState(null) // posición mientras se arrastra la barra
+  const [count, setCount] = useState(null) // pulso de la cuenta inicial que está sonando
   const [player] = useState(() => new Player())
 
   const timeline = useMemo(() => (project ? buildTimeline(project) : null), [project])
@@ -51,11 +52,16 @@ export function Editor({ id, goHome }) {
       if (ts - last > 66) {
         last = ts
         setPos(player.position)
+        const c = player.countIn
+        setCount((prev) => (prev?.n === c?.n && !prev === !c ? prev : c))
       }
       raf = requestAnimationFrame(loop)
     }
     raf = requestAnimationFrame(loop)
-    return () => cancelAnimationFrame(raf)
+    return () => {
+      cancelAnimationFrame(raf)
+      setCount(null)
+    }
   }, [playing, player])
 
   useEffect(
@@ -110,11 +116,18 @@ export function Editor({ id, goHome }) {
       if (res.errors.length) setToast(t('{n} cue(s) no se pudieron preparar', { n: res.errors.length }))
       const from = startTime >= endTime - 0.05 ? 0 : startTime // al final, vuelve a empezar
       if (from !== startTime) setStartTime(from)
-      await player.play(project, timeline, res, from, () => {
-        setPlaying(false)
-        setStartTime(0)
-        keepAwake(false)
-      })
+      await player.play(
+        project,
+        timeline,
+        res,
+        from,
+        () => {
+          setPlaying(false)
+          setStartTime(0)
+          keepAwake(false)
+        },
+        { countIn: true },
+      )
       setPlaying(true)
       keepAwake(true)
     } catch (err) {
@@ -225,7 +238,7 @@ export function Editor({ id, goHome }) {
           />
         )}
         {tab === 'settings' && (
-          <SettingsPanel project={project} update={update} player={player} onBeforeDelete={discard} onDeleted={goHome} />
+          <SettingsPanel project={project} update={update} timeline={timeline} player={player} onBeforeDelete={discard} onDeleted={goHome} />
         )}
       </main>
 
@@ -260,14 +273,23 @@ export function Editor({ id, goHome }) {
         </div>
         <div className="transport-row">
           <div className="transport-pos" aria-live="off">
-            <span className="pos-bar">
-              {info.bar}
-              <span className="pos-beat">.{Math.max(1, info.beat)}</span>
-            </span>
-            <span className="pos-meta">
-              {section ? section.name : formatTime(shownPos)}
-              {info.bpm ? `, ${Math.round(info.bpm)} bpm` : ''}
-            </span>
+            {count ? (
+              <>
+                <span className="pos-bar is-count">{count.n}</span>
+                <span className="pos-meta">{t('Cuenta inicial')}</span>
+              </>
+            ) : (
+              <>
+                <span className="pos-bar">
+                  {info.bar}
+                  <span className="pos-beat">.{Math.max(1, info.beat)}</span>
+                </span>
+                <span className="pos-meta">
+                  {section ? section.name : formatTime(shownPos)}
+                  {info.bpm ? `, ${Math.round(info.bpm)} bpm` : ''}
+                </span>
+              </>
+            )}
           </div>
           <div className="transport-actions">
             <button className="icon-btn" onClick={markCue} aria-label={t('Marcar cue aquí')} title={t('Marcar cue aquí')}>
@@ -317,6 +339,7 @@ export function Editor({ id, goHome }) {
           cues={cueList}
           pos={shownPos}
           playing={playing}
+          countIn={count}
           status={status}
           onToggle={play}
           onSkip={skip}
