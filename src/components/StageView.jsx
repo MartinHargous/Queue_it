@@ -1,5 +1,6 @@
 import { positionInfo } from '../lib/audio/engine.js'
 import { Icon } from './icons.jsx'
+import { HoldButton } from './HoldButton.jsx'
 
 // Vista de escenario: números grandes, legibles a un metro del atril.
 export function StageView({ project, timeline, cues, pos, playing, status, onToggle, onSkip, onClose }) {
@@ -43,15 +44,15 @@ export function StageView({ project, timeline, cues, pos, playing, status, onTog
         )}
       </div>
       <div className="stage-controls">
-        <button className="icon-btn" onClick={() => onSkip(-1)} disabled={!!status} aria-label="Retroceder un compás">
+        <HoldButton onStep={() => onSkip(-1)} disabled={!!status} aria-label="Retroceder un compás (mantén para seguir)">
           <Icon name="rew" fill size={30} />
-        </button>
+        </HoldButton>
         <button className={`play-btn stage-play${playing ? ' is-playing' : ''}`} onClick={onToggle} disabled={!!status} aria-label={playing ? 'Pausar' : 'Reproducir'}>
           <Icon name={playing ? 'pause' : 'play'} fill size={40} />
         </button>
-        <button className="icon-btn" onClick={() => onSkip(1)} disabled={!!status} aria-label="Adelantar un compás">
+        <HoldButton onStep={() => onSkip(1)} disabled={!!status} aria-label="Adelantar un compás (mantén para seguir)">
           <Icon name="fwd" fill size={30} />
-        </button>
+        </HoldButton>
       </div>
       {status && <p className="muted">{status}</p>}
     </div>

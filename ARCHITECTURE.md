@@ -46,6 +46,7 @@ src/
     SettingsPanel.jsx     mezcla, voz, eliminar pista
     ExportSheet.jsx       WAV, hoja .txt, respaldo .json
     StageView.jsx         modo escenario: números grandes
+    HoldButton.jsx        botón que repite mientras se mantiene (adelantar/retroceder)
     Sheet.jsx, Stepper.jsx, icons.jsx
   lib/
     model.js              modelo de datos + línea de tiempo (puro, testeable en Node)
@@ -116,7 +117,7 @@ Un proyecto es un objeto JSON guardado en el store `projects`. Los audios (pista
 
 **Scheduler.** Cada 100 ms se programan los eventos de los próximos 1,5 s con `AudioBufferSourceNode.start(t)`. El margen amplio tolera que Chrome ralentice los timers en segundo plano, y al detener se cancelan todos los nodos pendientes. El `AudioContext` usa `latencyHint: 'playback'` (buffers más grandes, menos cortes en Android); la posición en pantalla compensa `outputLatency`.
 
-**Transporte.** El botón principal pausa y retoma desde el mismo punto. Adelantar y retroceder saltan al inicio del compás siguiente o anterior (`skipTarget`); retroceder dentro del primer medio segundo de un compás va al anterior, así se puede tocar varias veces. Tocar el mapa de la pista también mueve el cursor, incluso mientras suena. Durante la reproducción `Player.seek()` reprograma desde el nuevo punto sin volver a preparar voces ni audio.
+**Transporte.** El botón principal pausa y retoma desde el mismo punto. Una barra de posición permite arrastrar a cualquier segundo (sonando, salta al soltar). Adelantar y retroceder saltan al inicio del compás siguiente o anterior (`skipTarget`); mantenidos presionados siguen saltando cada vez más rápido (`HoldButton`). Retroceder dentro del primer medio segundo de un compás va al anterior. Tocar el mapa de la pista también mueve el cursor, incluso mientras suena. Durante la reproducción `Player.seek()` reprograma desde el nuevo punto sin volver a preparar voces ni audio.
 
 **Fin de la reproducción.** El `Player` se detiene al terminar la estructura más la duración del cue más largo, para no cortar una frase de voz que cae en el último compás.
 

@@ -89,10 +89,16 @@ export class Player {
 
   async play(project, timeline, res, fromTime = 0, onEnd = null) {
     this.stop()
+    this.ctx = await resumeContext()
+    this.start(project, timeline, res, fromTime, onEnd)
+  }
+
+  // Parte sincrónica: no deja un instante sin reproducir (importante al saltar repetidamente)
+  start(project, timeline, res, fromTime, onEnd) {
+    this.stop()
     this.onEnd = onEnd
     this.args = { project, timeline, res }
-    const ctx = await resumeContext()
-    this.ctx = ctx
+    const ctx = this.ctx
     this.buses = createBuses(ctx, project.mix)
     this.events = buildEvents(project, timeline)
     this.res = res
@@ -133,16 +139,17 @@ export class Player {
   }
 
   // Salta a otro instante sin volver a preparar los recursos
-  async seek(t) {
+  seek(t) {
     if (!this.playing || !this.args) return
     const { project, timeline, res } = this.args
-    await this.play(project, timeline, res, Math.max(0, t), this.onEnd)
+    this.start(project, timeline, res, Math.max(0, t), this.onEnd)
   }
 
   get position() {
     if (!this.playing || !this.ctx) return this.from
     const lat = this.ctx.outputLatency || this.ctx.baseLatency || 0
-    return this.from + (this.ctx.currentTime - this.ctxStart - lat)
+    // Nunca antes del punto de partida: así adelantar varias veces seguidas avanza siempre
+    return this.from + Math.max(0, this.ctx.currentTime - this.ctxStart - lat)
   }
 
   setBusGain(name, value) {

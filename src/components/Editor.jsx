@@ -12,6 +12,7 @@ import { CueSheet } from './CueSheet.jsx'
 import { SettingsPanel } from './SettingsPanel.jsx'
 import { ExportSheet } from './ExportSheet.jsx'
 import { TrackMap } from './TrackMap.jsx'
+import { HoldButton } from './HoldButton.jsx'
 import { StageView } from './StageView.jsx'
 
 const TABS = [
@@ -32,6 +33,7 @@ export function Editor({ id, goHome }) {
   const [stage, setStage] = useState(false)
   const [toast, setToast] = useState(null)
   const [editingTitle, setEditingTitle] = useState(false)
+  const [scrub, setScrub] = useState(null) // posición mientras se arrastra la barra
   const [player] = useState(() => new Player())
 
   const timeline = useMemo(() => (project ? buildTimeline(project) : null), [project])
@@ -226,32 +228,62 @@ export function Editor({ id, goHome }) {
       </main>
 
       <footer className="transport">
-        <div className="transport-pos" aria-live="off">
-          <span className="pos-bar">
-            {info.bar}
-            <span className="pos-beat">.{Math.max(1, info.beat)}</span>
-          </span>
-          <span className="pos-meta">
-            {section ? section.name : formatTime(shownPos)}
-            {info.bpm ? `, ${Math.round(info.bpm)} bpm` : ''}
-          </span>
+        <div className="transport-seek">
+          <span className="seek-time">{formatTime(scrub ?? shownPos)}</span>
+          <input
+            type="range"
+            className="seek"
+            min={0}
+            max={endTime || 1}
+            step={0.1}
+            value={Math.min(scrub ?? shownPos, endTime)}
+            style={{ '--p': `${(Math.min(scrub ?? shownPos, endTime) / (endTime || 1)) * 100}%` }}
+            disabled={!!status}
+            aria-label="Posición en la pista"
+            onChange={(e) => {
+              const t = Number(e.target.value)
+              if (playing) setScrub(t) // sonando: salta al soltar
+              else seek(t)
+            }}
+            onPointerUp={() => {
+              if (scrub != null) seek(scrub)
+              setScrub(null)
+            }}
+            onKeyUp={() => {
+              if (scrub != null) seek(scrub)
+              setScrub(null)
+            }}
+          />
+          <span className="seek-time">{formatTime(endTime)}</span>
         </div>
-        <div className="transport-actions">
-          <button className="icon-btn" onClick={markCue} aria-label="Marcar cue aquí" title="Marcar cue aquí">
-            <Icon name="plus" />
-          </button>
-          <button className="icon-btn transport-skip" onClick={() => skip(-1)} disabled={!!status} aria-label="Retroceder un compás" title="Retroceder un compás">
-            <Icon name="rew" fill />
-          </button>
-          <button className={`play-btn${playing ? ' is-playing' : ''}`} onClick={play} disabled={!!status} aria-label={playing ? 'Pausar' : 'Reproducir'}>
-            <Icon name={playing ? 'pause' : 'play'} fill size={30} />
-          </button>
-          <button className="icon-btn transport-skip" onClick={() => skip(1)} disabled={!!status} aria-label="Adelantar un compás" title="Adelantar un compás">
-            <Icon name="fwd" fill />
-          </button>
-          <button className="icon-btn" onClick={() => setStage(true)} aria-label="Modo escenario" title="Modo escenario">
-            <Icon name="stage" />
-          </button>
+        <div className="transport-row">
+          <div className="transport-pos" aria-live="off">
+            <span className="pos-bar">
+              {info.bar}
+              <span className="pos-beat">.{Math.max(1, info.beat)}</span>
+            </span>
+            <span className="pos-meta">
+              {section ? section.name : formatTime(shownPos)}
+              {info.bpm ? `, ${Math.round(info.bpm)} bpm` : ''}
+            </span>
+          </div>
+          <div className="transport-actions">
+            <button className="icon-btn" onClick={markCue} aria-label="Marcar cue aquí" title="Marcar cue aquí">
+              <Icon name="plus" />
+            </button>
+            <HoldButton onStep={() => skip(-1)} disabled={!!status} aria-label="Retroceder un compás (mantén para seguir)" title="Retroceder (mantén presionado)">
+              <Icon name="rew" fill />
+            </HoldButton>
+            <button className={`play-btn${playing ? ' is-playing' : ''}`} onClick={play} disabled={!!status} aria-label={playing ? 'Pausar' : 'Reproducir'}>
+              <Icon name={playing ? 'pause' : 'play'} fill size={26} />
+            </button>
+            <HoldButton onStep={() => skip(1)} disabled={!!status} aria-label="Adelantar un compás (mantén para seguir)" title="Adelantar (mantén presionado)">
+              <Icon name="fwd" fill />
+            </HoldButton>
+            <button className="icon-btn" onClick={() => setStage(true)} aria-label="Modo escenario" title="Modo escenario">
+              <Icon name="stage" />
+            </button>
+          </div>
         </div>
         {status && <div className="transport-status">{status}</div>}
       </footer>
