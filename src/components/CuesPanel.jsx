@@ -1,5 +1,6 @@
 import { Icon } from './icons.jsx'
 import { formatTime } from '../lib/model.js'
+import { t } from '../lib/i18n.js'
 
 const KIND_ICON = { tts: 'voice', voice: 'mic', text: 'text' }
 const KIND_LABEL = { tts: 'Voz sintética', voice: 'Grabación', text: 'Solo texto' }
@@ -9,8 +10,8 @@ export function CuesPanel({ cues, onAdd, onEdit }) {
     <div className="stack">
       {cues.length === 0 ? (
         <div className="empty small">
-          <p className="empty-title">Sin cues todavía</p>
-          <p className="muted">Un cue es un aviso en un momento de la pista: una voz que dice «coro», una grabación tuya o una nota para la hoja.</p>
+          <p className="empty-title">{t('Sin cues todavía')}</p>
+          <p className="muted">{t('Un cue es un aviso en un momento de la pista: una voz que dice «coro», una grabación tuya o una nota para la hoja.')}</p>
         </div>
       ) : (
         <ul className="cue-list">
@@ -21,13 +22,14 @@ export function CuesPanel({ cues, onAdd, onEdit }) {
                   {c.pos.bar}
                   <span className="muted">:{c.pos.beat}</span>
                 </span>
-                <span className="cue-kind" title={KIND_LABEL[c.kind]}>
-                  <Icon name={KIND_ICON[c.kind]} size={20} title={KIND_LABEL[c.kind]} />
+                <span className="cue-kind" title={t(KIND_LABEL[c.kind])}>
+                  <Icon name={KIND_ICON[c.kind]} size={20} title={t(KIND_LABEL[c.kind])} />
                 </span>
-                <span className="cue-text">{c.text || <span className="muted">{c.kind === 'voice' ? 'Grabación sin nota' : 'Sin texto'}</span>}</span>
-                <span className="cue-time" title={c.anchor === 'time' ? 'Fijo en segundos' : 'Anclado al compás'}>
-                  {c.t == null ? 'fuera' : formatTime(c.t)}
-                  {c.anchor !== 'time' && <span className="cue-anchor-tag">compás</span>}
+                <span className="cue-text">{c.text || <span className="muted">{c.kind === 'voice' ? t('Grabación sin nota') : t('Sin texto')}</span>}</span>
+                <span className="cue-time" title={c.anchor === 'time' ? t('Fijo en segundos') : t('Anclado al compás')}>
+                  {c.t == null ? t('fuera') : formatTime(c.t)}
+                  {c.anchor !== 'time' && <span className="cue-anchor-tag">{t('compás')}</span>}
+                  {c.kind === 'tts' && c.voice && <span className="cue-anchor-tag">{c.voice.split('/').pop()}</span>}
                 </span>
               </button>
             </li>
@@ -35,7 +37,7 @@ export function CuesPanel({ cues, onAdd, onEdit }) {
         </ul>
       )}
       <button className="btn btn-block" onClick={onAdd}>
-        <Icon name="plus" /> Agregar cue
+        <Icon name="plus" /> {t('Agregar cue')}
       </button>
     </div>
   )

@@ -1,6 +1,7 @@
 import { positionInfo } from '../lib/audio/engine.js'
 import { Icon } from './icons.jsx'
 import { HoldButton } from './HoldButton.jsx'
+import { t } from '../lib/i18n.js'
 
 // Vista de escenario: números grandes, legibles a un metro del atril.
 export function StageView({ project, timeline, cues, pos, playing, status, onToggle, onSkip, onClose }) {
@@ -12,8 +13,8 @@ export function StageView({ project, timeline, cues, pos, playing, status, onTog
   const barsToNext = next ? next.pos.bar - info.bar : null
 
   return (
-    <div className="stage" role="dialog" aria-label="Modo escenario">
-      <button className="icon-btn stage-close" onClick={onClose} aria-label="Salir del modo escenario">
+    <div className="stage" role="dialog" aria-label={t('Modo escenario')}>
+      <button className="icon-btn stage-close" onClick={onClose} aria-label={t('Salir del modo escenario')}>
         <Icon name="close" />
       </button>
       <div className="stage-top">
@@ -34,23 +35,23 @@ export function StageView({ project, timeline, cues, pos, playing, status, onTog
       <div className="stage-next">
         {next ? (
           <>
-            <span className="muted">{barsToNext <= 0 ? 'Ahora' : barsToNext === 1 ? 'En 1 compás' : `En ${barsToNext} compases`}</span>
+            <span className="muted">{barsToNext <= 0 ? t('Ahora') : barsToNext === 1 ? t('En 1 compás') : t('En {n} compases', { n: barsToNext })}</span>
             <span>
               c.{next.pos.bar} {next.text}
             </span>
           </>
         ) : (
-          <span className="muted">Sin más cues</span>
+          <span className="muted">{t('Sin más cues')}</span>
         )}
       </div>
       <div className="stage-controls">
-        <HoldButton onStep={() => onSkip(-1)} disabled={!!status} aria-label="Retroceder un compás (mantén para seguir)">
+        <HoldButton onStep={() => onSkip(-1)} disabled={!!status} aria-label={t('Retroceder un compás (mantén para seguir)')}>
           <Icon name="rew" fill size={30} />
         </HoldButton>
-        <button className={`play-btn stage-play${playing ? ' is-playing' : ''}`} onClick={onToggle} disabled={!!status} aria-label={playing ? 'Pausar' : 'Reproducir'}>
+        <button className={`play-btn stage-play${playing ? ' is-playing' : ''}`} onClick={onToggle} disabled={!!status} aria-label={playing ? t('Pausar') : t('Reproducir')}>
           <Icon name={playing ? 'pause' : 'play'} fill size={40} />
         </button>
-        <HoldButton onStep={() => onSkip(1)} disabled={!!status} aria-label="Adelantar un compás (mantén para seguir)">
+        <HoldButton onStep={() => onSkip(1)} disabled={!!status} aria-label={t('Adelantar un compás (mantén para seguir)')}>
           <Icon name="fwd" fill size={30} />
         </HoldButton>
       </div>

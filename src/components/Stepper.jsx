@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { t } from '../lib/i18n.js'
 
 // Control numérico grande para dedos: − valor +. El valor se puede tipear.
 export function Stepper({ label, value, onChange, min = 1, max = 999, step = 1, suffix, disabled }) {
@@ -13,7 +14,7 @@ export function Stepper({ label, value, onChange, min = 1, max = 999, step = 1, 
     <div className={`stepper${disabled ? ' is-disabled' : ''}`}>
       {label && <span className="stepper-label">{label}</span>}
       <div className="stepper-row">
-        <button type="button" disabled={disabled || value <= min} onClick={() => onChange(clamp(value - step))} aria-label={`Bajar ${label ?? ''}`}>
+        <button type="button" disabled={disabled || value <= min} onClick={() => onChange(clamp(value - step))} aria-label={`${t('Bajar')} ${label ?? ''}`}>
           −
         </button>
         <input
@@ -30,7 +31,7 @@ export function Stepper({ label, value, onChange, min = 1, max = 999, step = 1, 
           onKeyDown={(e) => e.key === 'Enter' && e.currentTarget.blur()}
         />
         {suffix && <span className="stepper-suffix">{suffix}</span>}
-        <button type="button" disabled={disabled || value >= max} onClick={() => onChange(clamp(value + step))} aria-label={`Subir ${label ?? ''}`}>
+        <button type="button" disabled={disabled || value >= max} onClick={() => onChange(clamp(value + step))} aria-label={`${t('Subir')} ${label ?? ''}`}>
           +
         </button>
       </div>

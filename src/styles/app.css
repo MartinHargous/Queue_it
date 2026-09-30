@@ -98,6 +98,32 @@ p {
   font: 700 2rem/1 var(--display);
   letter-spacing: 0.01em;
 }
+.home-bar {
+  justify-content: space-between;
+  padding-right: 12px;
+}
+.lang-picker {
+  display: flex;
+  gap: 2px;
+  padding: 3px;
+  border-radius: var(--r-md);
+  border: 1px solid var(--line);
+  background: var(--bg);
+}
+.lang-picker button {
+  min-width: 40px;
+  min-height: 34px;
+  border: 0;
+  border-radius: 9px;
+  background: none;
+  color: var(--muted);
+  font: 600 0.95rem var(--display);
+  letter-spacing: 0.04em;
+}
+.lang-picker .is-active {
+  background: var(--raised);
+  color: var(--text);
+}
 .title-btn,
 .title-input {
   flex: 1;

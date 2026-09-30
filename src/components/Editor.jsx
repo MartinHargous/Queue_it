@@ -14,6 +14,7 @@ import { ExportSheet } from './ExportSheet.jsx'
 import { TrackMap } from './TrackMap.jsx'
 import { HoldButton } from './HoldButton.jsx'
 import { StageView } from './StageView.jsx'
+import { t, useLang } from '../lib/i18n.js'
 
 const TABS = [
   ['structure', 'Estructura'],
@@ -22,6 +23,7 @@ const TABS = [
 ]
 
 export function Editor({ id, goHome }) {
+  useLang()
   const { project, update, missing, flush, discard } = useProject(id)
   const [tab, setTab] = useState('structure')
   const [playing, setPlaying] = useState(false)
@@ -103,9 +105,9 @@ export function Editor({ id, goHome }) {
     if (player.playing) return pause()
     try {
       await resumeContext()
-      setStatus('Preparando…')
+      setStatus(t('Preparando…'))
       const res = await loadResources(project, { onStatus: setStatus })
-      if (res.errors.length) setToast(`${res.errors.length} cue(s) no se pudieron preparar`)
+      if (res.errors.length) setToast(t('{n} cue(s) no se pudieron preparar', { n: res.errors.length }))
       const from = startTime >= endTime - 0.05 ? 0 : startTime // al final, vuelve a empezar
       if (from !== startTime) setStartTime(from)
       await player.play(project, timeline, res, from, () => {
@@ -116,7 +118,7 @@ export function Editor({ id, goHome }) {
       setPlaying(true)
       keepAwake(true)
     } catch (err) {
-      setToast(err.message || 'No se pudo reproducir')
+      setToast(err.message || t('No se pudo reproducir'))
     } finally {
       setStatus(null)
     }
@@ -126,9 +128,9 @@ export function Editor({ id, goHome }) {
     return (
       <div className="screen">
         <div className="empty">
-          <p className="empty-title">Esta pista ya no existe</p>
+          <p className="empty-title">{t('Esta pista ya no existe')}</p>
           <button className="btn" onClick={goHome}>
-            Volver a mis pistas
+            {t('Volver a mis pistas')}
           </button>
         </div>
       </div>
@@ -144,7 +146,7 @@ export function Editor({ id, goHome }) {
   const markCue = () => {
     const cue = newTimeCue(playing ? player.position : startTime)
     update((p) => ({ ...p, cues: [...p.cues, cue] }))
-    setToast(`Cue marcado en ${formatTimePrecise(cue.time)} (c.${info.bar}:${Math.max(1, info.beat)})`)
+    setToast(t('Cue marcado en {t}', { t: `${formatTimePrecise(cue.time)} (c.${info.bar}:${Math.max(1, info.beat)})` }))
   }
 
   const saveCue = (cue) => {
@@ -167,7 +169,7 @@ export function Editor({ id, goHome }) {
       <header className="appbar">
         <button
           className="icon-btn"
-          aria-label="Volver a mis pistas"
+          aria-label={t('Volver a mis pistas')}
           onClick={async () => {
             stop()
             await flush()
@@ -181,7 +183,7 @@ export function Editor({ id, goHome }) {
             className="title-input"
             autoFocus
             defaultValue={project.title}
-            aria-label="Nombre de la pista"
+            aria-label={t('Nombre de la pista')}
             onBlur={(e) => {
               const v = e.target.value.trim()
               if (v) update((p) => ({ ...p, title: v }))
@@ -190,11 +192,11 @@ export function Editor({ id, goHome }) {
             onKeyDown={(e) => e.key === 'Enter' && e.currentTarget.blur()}
           />
         ) : (
-          <button className="title-btn" onClick={() => setEditingTitle(true)} aria-label="Cambiar nombre">
+          <button className="title-btn" onClick={() => setEditingTitle(true)} aria-label={t('Cambiar nombre')}>
             {project.title}
           </button>
         )}
-        <button className="icon-btn" aria-label="Exportar" onClick={() => setExporting(true)}>
+        <button className="icon-btn" aria-label={t('Exportar')} onClick={() => setExporting(true)}>
           <Icon name="share" />
         </button>
       </header>
@@ -204,7 +206,7 @@ export function Editor({ id, goHome }) {
       <nav className="tabs" role="tablist">
         {TABS.map(([k, label]) => (
           <button key={k} role="tab" aria-selected={tab === k} className={tab === k ? 'is-active' : ''} onClick={() => setTab(k)}>
-            {label}
+            {t(label)}
             {k === 'cues' && project.cues.length > 0 && <span className="tab-count">{project.cues.length}</span>}
           </button>
         ))}
@@ -239,7 +241,7 @@ export function Editor({ id, goHome }) {
             value={Math.min(scrub ?? shownPos, endTime)}
             style={{ '--p': `${(Math.min(scrub ?? shownPos, endTime) / (endTime || 1)) * 100}%` }}
             disabled={!!status}
-            aria-label="Posición en la pista"
+            aria-label={t('Posición en la pista')}
             onChange={(e) => {
               const t = Number(e.target.value)
               if (playing) setScrub(t) // sonando: salta al soltar
@@ -268,19 +270,19 @@ export function Editor({ id, goHome }) {
             </span>
           </div>
           <div className="transport-actions">
-            <button className="icon-btn" onClick={markCue} aria-label="Marcar cue aquí" title="Marcar cue aquí">
+            <button className="icon-btn" onClick={markCue} aria-label={t('Marcar cue aquí')} title={t('Marcar cue aquí')}>
               <Icon name="plus" />
             </button>
-            <HoldButton onStep={() => skip(-1)} disabled={!!status} aria-label="Retroceder un compás (mantén para seguir)" title="Retroceder (mantén presionado)">
+            <HoldButton onStep={() => skip(-1)} disabled={!!status} aria-label={t('Retroceder un compás (mantén para seguir)')} title={t('Retroceder (mantén presionado)')}>
               <Icon name="rew" fill />
             </HoldButton>
-            <button className={`play-btn${playing ? ' is-playing' : ''}`} onClick={play} disabled={!!status} aria-label={playing ? 'Pausar' : 'Reproducir'}>
+            <button className={`play-btn${playing ? ' is-playing' : ''}`} onClick={play} disabled={!!status} aria-label={playing ? t('Pausar') : t('Reproducir')}>
               <Icon name={playing ? 'pause' : 'play'} fill size={26} />
             </button>
-            <HoldButton onStep={() => skip(1)} disabled={!!status} aria-label="Adelantar un compás (mantén para seguir)" title="Adelantar (mantén presionado)">
+            <HoldButton onStep={() => skip(1)} disabled={!!status} aria-label={t('Adelantar un compás (mantén para seguir)')} title={t('Adelantar (mantén presionado)')}>
               <Icon name="fwd" fill />
             </HoldButton>
-            <button className="icon-btn" onClick={() => setStage(true)} aria-label="Modo escenario" title="Modo escenario">
+            <button className="icon-btn" onClick={() => setStage(true)} aria-label={t('Modo escenario')} title={t('Modo escenario')}>
               <Icon name="stage" />
             </button>
           </div>

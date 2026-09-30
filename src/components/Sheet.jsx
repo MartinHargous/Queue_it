@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { Icon } from './icons.jsx'
+import { t } from '../lib/i18n.js'
 
 // Hoja inferior modal. En Android el botón "atrás" la cierra: cada hoja abierta
 // ocupa una entrada del historial, compartida si se abre una hoja justo tras otra.
@@ -35,7 +36,7 @@ export function Sheet({ title, onClose, children, footer }) {
       <div className="sheet" role="dialog" aria-modal="true" aria-label={title} ref={ref} tabIndex={-1} onClick={(e) => e.stopPropagation()}>
         <header className="sheet-head">
           <h2>{title}</h2>
-          <button className="icon-btn" onClick={onClose} aria-label="Cerrar">
+          <button className="icon-btn" onClick={onClose} aria-label={t('Cerrar')}>
             <Icon name="close" />
           </button>
         </header>

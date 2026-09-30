@@ -1,12 +1,15 @@
-import { useEffect, useRef, useState } from 'react'
+import { memo, useEffect, useRef, useState } from 'react'
 import { getBlob } from '../lib/db.js'
 import { decodeBlob } from '../lib/audio/context.js'
 import { detectInWorker, halveBeats, doubleBeats, computePeaks } from '../lib/audio/beat.js'
 import { newGrid, formatTime } from '../lib/model.js'
 import { Stepper } from './Stepper.jsx'
 import { Waveform } from './Waveform.jsx'
+import { t, useLang } from '../lib/i18n.js'
 
-export function AudioPanel({ project, update, timeline, getPos, playing, startTime, setStartTime }) {
+// memo: no se vuelve a dibujar ~15 veces por segundo mientras suena (la posición la lee cada hijo)
+export const AudioPanel = memo(function AudioPanel({ project, update, timeline, getPos, playing, startTime, setStartTime }) {
+  useLang()
   const [buffer, setBuffer] = useState(null)
   const [peaks, setPeaks] = useState(null)
   const [progress, setProgress] = useState(null) // null = sin tarea, -1 = sin avance medible, 0–1 = avance
@@ -27,7 +30,7 @@ export function AudioPanel({ project, update, timeline, getPos, playing, startTi
         setBuffer(buf)
         setPeaks(computePeaks(buf))
       })
-      .catch(() => alive && setError('No se pudo abrir el audio guardado.'))
+      .catch(() => alive && setError(t('No se pudo abrir el audio guardado.')))
     return () => {
       alive = false
     }
@@ -40,7 +43,7 @@ export function AudioPanel({ project, update, timeline, getPos, playing, startTi
     if (!buffer) return
     setError(null)
     setInfo(null)
-    setStage('Preparando el audio…')
+    setStage(t('Preparando el audio…'))
     setProgress(-1)
     try {
       const r = await detectInWorker(buffer, {
@@ -48,11 +51,11 @@ export function AudioPanel({ project, update, timeline, getPos, playing, startTi
         method,
         onProgress: (v, label) => {
           setProgress(v)
-          if (label) setStage(label)
+          if (label) setStage(t(label))
         },
       })
-      if (!r.beats.length) throw new Error('No se encontró un pulso claro. Usa tempo fijo.')
-      if (r.engine === 'basic') setInfo('No se pudo cargar el detector avanzado; se usó el básico. Revisa el resultado.')
+      if (!r.beats.length) throw new Error(t('No se encontró un pulso claro. Usa tempo fijo.'))
+      if (r.engine === 'basic') setInfo(t('No se pudo cargar el detector avanzado; se usó el básico. Revisa el resultado.'))
       update((p) => ({ ...p, grid: newGrid({ bpm: r.bpm, offset: r.offset, beats: r.beats, downbeat: r.downbeat, num: p.grid?.num ?? 4 }) }))
     } catch (err) {
       setError(err.message)
@@ -93,7 +96,7 @@ export function AudioPanel({ project, update, timeline, getPos, playing, startTi
     } else setGrid({ offset: Math.max(0, t - (grid.nudge || 0)) })
   }
 
-  if (!audio) return <p className="notice is-error">Esta pista no tiene audio.</p>
+  if (!audio) return <p className="notice is-error">{t('Esta pista no tiene audio.')}</p>
 
   return (
     <div className="stack">
@@ -105,7 +108,7 @@ export function AudioPanel({ project, update, timeline, getPos, playing, startTi
       {peaks && (
         <Waveform peaks={peaks} timeline={timeline} getPos={getPos} playing={playing} onScrub={(t) => setStartTime(Math.min(t, audio.duration))} />
       )}
-      {!playing && peaks && <p className="hint">Arrastra la onda para moverte. Cursor en {formatTime(startTime)}.</p>}
+      {!playing && peaks && <p className="hint">{t('Arrastra la onda para moverte. Cursor en {t}.', { t: formatTime(startTime) })}</p>}
 
       {progress != null && (
         <div
@@ -134,15 +137,15 @@ export function AudioPanel({ project, update, timeline, getPos, playing, startTi
       {!grid && progress == null && (
         <div className="stack">
           <button className="btn btn-primary btn-block" onClick={() => detect('degara')} disabled={!buffer}>
-            Detectar pulso
+            {t('Detectar pulso')}
           </button>
           <button className="btn btn-block" onClick={() => detect('multifeature')} disabled={!buffer}>
-            Probar otro método (más lento)
+            {t('Probar otro método (más lento)')}
           </button>
           <button className="btn btn-block" onClick={manual}>
-            Poner el tempo a mano
+            {t('Poner el tempo a mano')}
           </button>
-          <p className="hint">Se hace en el teléfono, sin internet, y funciona con o sin batería. Si la canción tiene un tempo muy irregular, usa el tempo a mano.</p>
+          <p className="hint">{t('Se hace en el teléfono, sin internet, y funciona con o sin batería. Si la canción tiene un tempo muy irregular, usa el tempo a mano.')}</p>
         </div>
       )}
 
@@ -153,7 +156,7 @@ export function AudioPanel({ project, update, timeline, getPos, playing, startTi
             <span className="muted">bpm</span>
           </div>
 
-          <div className="segmented" role="radiogroup" aria-label="Modo de grilla">
+          <div className="segmented" role="radiogroup" aria-label={t('Modo de grilla')}>
             <button
               role="radio"
               aria-checked={grid.mode === 'detected'}
@@ -161,61 +164,61 @@ export function AudioPanel({ project, update, timeline, getPos, playing, startTi
               disabled={!grid.beats.length}
               onClick={() => setGrid({ mode: 'detected' })}
             >
-              Seguir el pulso detectado
+              {t('Seguir el pulso detectado')}
             </button>
             <button role="radio" aria-checked={grid.mode === 'fixed'} className={grid.mode === 'fixed' ? 'is-active' : ''} onClick={() => setGrid({ mode: 'fixed', offset: grid.mode === 'detected' ? grid.beats[grid.downbeat] ?? 0 : grid.offset })}>
-              Tempo fijo
+              {t('Tempo fijo')}
             </button>
           </div>
 
           {grid.mode === 'detected' ? (
             <div className="grid-2">
               <button className="btn" onClick={() => update((p) => ({ ...p, grid: halveBeats(p.grid) }))}>
-                ½× tempo
+                {t('½× tempo')}
               </button>
               <button className="btn" onClick={() => update((p) => ({ ...p, grid: doubleBeats(p.grid) }))}>
-                2× tempo
+                {t('2× tempo')}
               </button>
             </div>
           ) : (
             <div className="grid-2 align-end">
-              <Stepper label="Tempo" value={grid.bpm} min={20} max={400} step={0.5} suffix="bpm" onChange={(v) => setGrid({ bpm: v })} />
+              <Stepper label={t('Tempo')} value={grid.bpm} min={20} max={400} step={0.5} suffix="bpm" onChange={(v) => setGrid({ bpm: v })} />
               <button className="btn tap-btn" onClick={tap}>
-                Tap
+                {t('Tap')}
               </button>
             </div>
           )}
 
           <div className="grid-2">
-            <Stepper label="Tiempos por compás" value={grid.num} min={1} max={16} onChange={(v) => setGrid({ num: v })} />
-            <Stepper label="Ajuste fino" value={Math.round((grid.nudge || 0) * 1000)} min={-300} max={300} step={5} suffix="ms" onChange={(v) => setGrid({ nudge: v / 1000 })} />
+            <Stepper label={t('Tiempos por compás')} value={grid.num} min={1} max={16} onChange={(v) => setGrid({ num: v })} />
+            <Stepper label={t('Ajuste fino')} value={Math.round((grid.nudge || 0) * 1000)} min={-300} max={300} step={5} suffix="ms" onChange={(v) => setGrid({ nudge: v / 1000 })} />
           </div>
 
           <div className="field">
-            <span>Primer tiempo del compás</span>
+            <span>{t('Primer tiempo del compás')}</span>
             <div className="grid-3">
-              <button className="btn" onClick={() => shiftDownbeat(-1)} aria-label="Un pulso antes">
-                − 1 pulso
+              <button className="btn" onClick={() => shiftDownbeat(-1)} aria-label={t('Un pulso antes')}>
+                {t('− 1 pulso')}
               </button>
               <button className="btn" onClick={downbeatHere} disabled={playing}>
-                Aquí
+                {t('Aquí')}
               </button>
-              <button className="btn" onClick={() => shiftDownbeat(1)} aria-label="Un pulso después">
-                + 1 pulso
+              <button className="btn" onClick={() => shiftDownbeat(1)} aria-label={t('Un pulso después')}>
+                {t('+ 1 pulso')}
               </button>
             </div>
           </div>
 
           <div className="grid-2">
             <button className="btn btn-ghost" onClick={() => detect('degara')} disabled={!buffer}>
-              Volver a detectar
+              {t('Volver a detectar')}
             </button>
             <button className="btn btn-ghost" onClick={() => detect('multifeature')} disabled={!buffer}>
-              Otro método
+              {t('Otro método')}
             </button>
           </div>
         </div>
       )}
     </div>
   )
-}
+})

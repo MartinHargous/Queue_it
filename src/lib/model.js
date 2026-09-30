@@ -1,5 +1,6 @@
 // Modelo de datos y cálculo de la línea de tiempo.
 // Todo aquí es puro (sin DOM ni Web Audio) para poder probarlo en Node.
+import { t } from './i18n.js'
 
 export const uid = () =>
   (globalThis.crypto?.randomUUID?.() ?? Math.random().toString(36).slice(2) + Date.now().toString(36))
@@ -9,7 +10,7 @@ export const SCHEMA_VERSION = 1
 export function newSection(prev, index = 0) {
   return {
     id: uid(),
-    name: index === 0 ? 'Intro' : `Sección ${index + 1}`,
+    name: index === 0 ? 'Intro' : t('Sección {n}', { n: index + 1 }),
     bars: prev?.bars ?? 4,
     bpm: prev?.bpmEnd ?? prev?.bpm ?? 100,
     bpmEnd: null, // si tiene valor: cambio gradual lineal hasta este tempo
@@ -24,7 +25,7 @@ export function newProject(kind) {
     id: uid(),
     schema: SCHEMA_VERSION,
     kind, // 'metronome' | 'audio'
-    title: kind === 'audio' ? 'Pista desde audio' : 'Pista con metrónomo',
+    title: kind === 'audio' ? t('Pista desde audio') : t('Pista con metrónomo'),
     createdAt: now,
     updatedAt: now,
     sections: kind === 'metronome' ? [newSection()] : [],
@@ -227,19 +228,19 @@ export function cheatSheetText(project, timeline) {
     project.sections.forEach((s) => {
       const end = bar + s.bars - 1
       const tempo = s.bpmEnd && s.bpmEnd !== s.bpm ? `${s.bpm}→${s.bpmEnd}` : `${s.bpm}`
-      lines.push(`[${s.name}]  compases ${bar}–${end}  ·  ${s.num}/${s.den}  ·  ${tempo} bpm`)
+      lines.push(`[${s.name}]  ${t('compases')} ${bar}–${end}  ·  ${s.num}/${s.den}  ·  ${tempo} bpm`)
       cues
         .filter((c) => c.t != null && c.pos.bar >= bar && c.pos.bar <= end)
-        .forEach((c) => lines.push(`   c.${c.pos.bar}:${c.pos.beat}  (${formatTime(c.t)})  ${c.text || '(grabación)'}`))
+        .forEach((c) => lines.push(`   c.${c.pos.bar}:${c.pos.beat}  (${formatTime(c.t)})  ${c.text || t('(grabación)')}`))
       bar = end + 1
     })
   } else {
     const g = project.grid
-    if (g) lines.push(`Tempo aprox. ${Math.round(g.bpm)} bpm  ·  ${g.num}/4`, '')
+    if (g) lines.push(`${t('Tempo aprox.')} ${Math.round(g.bpm)} bpm  ·  ${g.num}/4`, '')
     cues.filter((c) => c.t != null).forEach((c) => {
-      lines.push(`c.${c.pos.bar}:${c.pos.beat}  (${formatTime(c.t)})  ${c.text || '(grabación)'}`)
+      lines.push(`c.${c.pos.bar}:${c.pos.beat}  (${formatTime(c.t)})  ${c.text || t('(grabación)')}`)
     })
   }
-  lines.push('', `Duración ${formatTime(timeline.duration)}  ·  hecho con Queue it`)
+  lines.push('', `${t('Duración')} ${formatTime(timeline.duration)}  ·  ${t('hecho con Queue it')}`)
   return lines.join('\n')
 }
