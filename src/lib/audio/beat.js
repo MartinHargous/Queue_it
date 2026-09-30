@@ -1,3 +1,4 @@
+import { t } from '../i18n.js'
 // essentia.js exige 44,1 kHz mono. Android suele decodificar a 48 kHz, así que se remuestrea
 // con OfflineAudioContext (filtro de calidad del navegador) y se mezcla a mono.
 const ESSENTIA_RATE = 44100
@@ -33,7 +34,7 @@ export async function detectInWorker(audioBuffer, { num = 4, method = 'degara', 
     }
     worker.onerror = (e) => {
       worker.terminate()
-      reject(new Error(e.message || 'No se pudo iniciar el detector'))
+      reject(new Error(e.message || t('No se pudo iniciar el detector')))
     }
     worker.postMessage({ channelData: mono, sampleRate: ESSENTIA_RATE, num, method }, [mono.buffer])
   })

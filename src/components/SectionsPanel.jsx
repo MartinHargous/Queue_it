@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { newSection, uid } from '../lib/model.js'
 import { Stepper } from './Stepper.jsx'
 import { Icon } from './icons.jsx'
+import { t } from '../lib/i18n.js'
 
 const DENS = [2, 4, 8, 16]
 
@@ -27,7 +28,7 @@ export function SectionsPanel({ project, update, disabled }) {
     setOpen(s.id)
   }
   const duplicate = (i) => {
-    const s = { ...sections[i], id: uid(), name: `${sections[i].name} (copia)` }
+    const s = { ...sections[i], id: uid(), name: `${sections[i].name} (${t('copia')})` }
     update((p) => ({ ...p, sections: [...p.sections.slice(0, i + 1), s, ...p.sections.slice(i + 1)] }))
     setOpen(s.id)
   }
@@ -36,7 +37,7 @@ export function SectionsPanel({ project, update, disabled }) {
   const starts = sections.reduce((acc, s, i) => [...acc, i === 0 ? 1 : acc[i - 1] + sections[i - 1].bars], [])
   return (
     <div className="stack">
-      {disabled && <p className="notice">Detén la reproducción para editar la estructura.</p>}
+      {disabled && <p className="notice">{t('Detén la reproducción para editar la estructura.')}</p>}
       <ol className="section-list">
         {sections.map((s, i) => {
           const from = starts[i]
@@ -59,17 +60,17 @@ export function SectionsPanel({ project, update, disabled }) {
               {isOpen && (
                 <fieldset className="section-body" disabled={disabled}>
                   <label className="field">
-                    <span>Nombre</span>
+                    <span>{t('Nombre')}</span>
                     <input value={s.name} onChange={(e) => setSection(s.id, { name: e.target.value })} />
                   </label>
                   <div className="grid-2">
-                    <Stepper label="Compases" value={s.bars} min={1} max={999} onChange={(v) => setSection(s.id, { bars: v })} />
-                    <Stepper label="Tempo" value={s.bpm} min={20} max={400} suffix="bpm" onChange={(v) => setSection(s.id, { bpm: v })} />
+                    <Stepper label={t('Compases')} value={s.bars} min={1} max={999} onChange={(v) => setSection(s.id, { bars: v })} />
+                    <Stepper label={t('Tempo')} value={s.bpm} min={20} max={400} suffix="bpm" onChange={(v) => setSection(s.id, { bpm: v })} />
                   </div>
                   <div className="grid-2">
-                    <Stepper label="Tiempos por compás" value={s.num} min={1} max={32} onChange={(v) => setSection(s.id, { num: v })} />
+                    <Stepper label={t('Tiempos por compás')} value={s.num} min={1} max={32} onChange={(v) => setSection(s.id, { num: v })} />
                     <label className="field">
-                      <span>Figura del pulso</span>
+                      <span>{t('Figura del pulso')}</span>
                       <select value={s.den} onChange={(e) => setSection(s.id, { den: Number(e.target.value) })}>
                         {DENS.map((d) => (
                           <option key={d} value={d}>
@@ -85,22 +86,22 @@ export function SectionsPanel({ project, update, disabled }) {
                       checked={s.bpmEnd != null}
                       onChange={(e) => setSection(s.id, { bpmEnd: e.target.checked ? s.bpm + 10 : null })}
                     />
-                    <span>Cambio gradual de tempo (accel. / rit.)</span>
+                    <span>{t('Cambio gradual de tempo (accel. / rit.)')}</span>
                   </label>
                   {s.bpmEnd != null && (
-                    <Stepper label="Tempo al final" value={s.bpmEnd} min={20} max={400} suffix="bpm" onChange={(v) => setSection(s.id, { bpmEnd: v })} />
+                    <Stepper label={t('Tempo al final')} value={s.bpmEnd} min={20} max={400} suffix="bpm" onChange={(v) => setSection(s.id, { bpmEnd: v })} />
                   )}
                   <div className="row-actions">
-                    <button className="icon-btn" onClick={() => move(i, -1)} disabled={i === 0} aria-label="Subir sección">
+                    <button className="icon-btn" onClick={() => move(i, -1)} disabled={i === 0} aria-label={t('Subir sección')}>
                       <Icon name="up" />
                     </button>
-                    <button className="icon-btn" onClick={() => move(i, 1)} disabled={i === sections.length - 1} aria-label="Bajar sección">
+                    <button className="icon-btn" onClick={() => move(i, 1)} disabled={i === sections.length - 1} aria-label={t('Bajar sección')}>
                       <Icon name="down" />
                     </button>
-                    <button className="icon-btn" onClick={() => duplicate(i)} aria-label="Duplicar sección">
+                    <button className="icon-btn" onClick={() => duplicate(i)} aria-label={t('Duplicar sección')}>
                       <Icon name="copy" />
                     </button>
-                    <button className="icon-btn is-danger" onClick={() => remove(s.id)} disabled={sections.length === 1} aria-label="Eliminar sección">
+                    <button className="icon-btn is-danger" onClick={() => remove(s.id)} disabled={sections.length === 1} aria-label={t('Eliminar sección')}>
                       <Icon name="trash" />
                     </button>
                   </div>
@@ -111,9 +112,9 @@ export function SectionsPanel({ project, update, disabled }) {
         })}
       </ol>
       <button className="btn btn-block" onClick={add} disabled={disabled}>
-        <Icon name="plus" /> Agregar sección
+        <Icon name="plus" /> {t('Agregar sección')}
       </button>
-      <p className="hint">El tempo cuenta la figura del pulso: en 6/8 a 180 bpm suena cada corchea.</p>
+      <p className="hint">{t('El tempo cuenta la figura del pulso: en 6/8 a 180 bpm suena cada corchea.')}</p>
     </div>
   )
 }

@@ -3,6 +3,8 @@ import { clickBuffer } from './clicks.js'
 import { ttsBuffer } from './tts.js'
 import { buildEvents, beatIndexAt } from '../model.js'
 import { getBlob } from '../db.js'
+import { cueVoice } from './voices.js'
+import { t } from '../i18n.js'
 
 const LOOKAHEAD = 1.5 // segundos programados por adelantado (tolera throttling en segundo plano)
 const TICK_MS = 100
@@ -52,7 +54,7 @@ function scheduleEvent(ctx, buses, e, when, res) {
 export async function loadResources(project, { onStatus } = {}) {
   const res = { track: null, cueBuffers: new Map(), cueGain: new Map(), errors: [] }
   if (project.kind === 'audio' && project.audio?.blobId) {
-    onStatus?.('Cargando audio…')
+    onStatus?.(t('Cargando audio…'))
     const blob = await getBlob(project.audio.blobId)
     if (blob) res.track = await decodeBlob(project.audio.blobId, blob)
   }
@@ -62,8 +64,8 @@ export async function loadResources(project, { onStatus } = {}) {
     n++
     try {
       if (c.kind === 'tts') {
-        onStatus?.(`Preparando voz ${n}/${speakable.length}…`)
-        res.cueBuffers.set(c.id, await ttsBuffer(c.text, project.tts))
+        onStatus?.(t('Preparando voz {n}/{total}…', { n, total: speakable.length }))
+        res.cueBuffers.set(c.id, await ttsBuffer(c.text, cueVoice(project, c)))
       } else {
         const blob = await getBlob(c.blobId)
         if (blob) res.cueBuffers.set(c.id, await decodeBlob(c.blobId, blob))
@@ -103,6 +105,7 @@ export class Player {
     this.events = buildEvents(project, timeline)
     this.res = res
     this.from = fromTime
+    this.lastPos = fromTime
     this.ctxStart = ctx.currentTime + 0.12
     let tail = 0.5
     for (const b of res.cueBuffers.values()) tail = Math.max(tail, b.duration + 0.1) // deja terminar el último cue
@@ -145,11 +148,23 @@ export class Player {
     this.start(project, timeline, res, Math.max(0, t), this.onEnd)
   }
 
+  // Lo que suena ahora por el parlante. En Android `currentTime` avanza a saltos
+  // (bloques de audio grandes), así que se interpola con el reloj de alta precisión:
+  // getOutputTimestamp dice qué instante del contexto sonó en qué momento de performance.now().
   get position() {
     if (!this.playing || !this.ctx) return this.from
-    const lat = this.ctx.outputLatency || this.ctx.baseLatency || 0
-    // Nunca antes del punto de partida: así adelantar varias veces seguidas avanza siempre
-    return this.from + Math.max(0, this.ctx.currentTime - this.ctxStart - lat)
+    let now
+    const ts = this.ctx.getOutputTimestamp?.()
+    if (ts?.performanceTime > 0 && ts.contextTime > 0) {
+      now = ts.contextTime + (performance.now() - ts.performanceTime) / 1000
+    } else {
+      now = this.ctx.currentTime - (this.ctx.outputLatency || this.ctx.baseLatency || 0)
+    }
+    // Nunca antes del punto de partida (así adelantar varias veces seguidas avanza siempre)
+    // y nunca hacia atrás por el ruido de la interpolación
+    const p = this.from + Math.max(0, now - this.ctxStart)
+    if (p > this.lastPos || p < this.lastPos - 0.25) this.lastPos = p
+    return this.lastPos
   }
 
   setBusGain(name, value) {

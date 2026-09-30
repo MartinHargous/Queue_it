@@ -1,3 +1,4 @@
+import { t } from './i18n.js'
 import { getBlob, putBlob, saveProject, projectBlobIds } from './db.js'
 import { uid, SCHEMA_VERSION } from './model.js'
 
@@ -52,7 +53,7 @@ export async function exportProjectFile(project) {
 
 export async function importProjectFile(file) {
   const data = JSON.parse(await file.text())
-  if (data?.format !== 'queue-it' || !data.project) throw new Error('El archivo no es un proyecto de Queue it.')
+  if (data?.format !== 'queue-it' || !data.project) throw new Error(t('El archivo no es un proyecto de Queue it.'))
   const map = {}
   for (const [oldId, b] of Object.entries(data.blobs || {})) {
     const id = uid()

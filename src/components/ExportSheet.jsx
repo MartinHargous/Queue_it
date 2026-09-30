@@ -4,6 +4,7 @@ import { loadResources, renderProject } from '../lib/audio/engine.js'
 import { encodeWav } from '../lib/audio/wav.js'
 import { cheatSheetText } from '../lib/model.js'
 import { shareOrDownload, downloadBlob, exportProjectFile, safeName } from '../lib/share.js'
+import { t } from '../lib/i18n.js'
 
 export function ExportSheet({ project, timeline, onClose }) {
   const isAudio = project.kind === 'audio'
@@ -22,7 +23,7 @@ export function ExportSheet({ project, timeline, onClose }) {
     try {
       setReady(await fn())
     } catch (err) {
-      setMsg({ ok: false, text: err.message || 'No se pudo exportar.' })
+      setMsg({ ok: false, text: err.message || t('No se pudo exportar.') })
     } finally {
       setBusy(null)
     }
@@ -30,50 +31,50 @@ export function ExportSheet({ project, timeline, onClose }) {
 
   const share = async () => {
     const r = await shareOrDownload(ready.blob, ready.filename)
-    if (r === 'downloaded') setMsg({ ok: true, text: 'Archivo guardado en Descargas.' })
+    if (r === 'downloaded') setMsg({ ok: true, text: t('Archivo guardado en Descargas.') })
   }
   const save = () => {
     downloadBlob(ready.blob, ready.filename)
-    setMsg({ ok: true, text: 'Archivo guardado en Descargas.' })
+    setMsg({ ok: true, text: t('Archivo guardado en Descargas.') })
   }
 
   const exportAudio = () =>
-    run('Renderizando audio…', async () => {
+    run(t('Renderizando audio…'), async () => {
       const res = await loadResources(project, { onStatus: (s) => s && setBusy(s) })
-      setBusy('Renderizando audio…')
+      setBusy(t('Renderizando audio…'))
       const mixProject = { ...project, mix: { ...project.mix, clickOnAudio: opts.click } }
       const buf = await renderProject(mixProject, timeline, res, opts)
-      setBusy('Codificando WAV…')
+      setBusy(t('Codificando WAV…'))
       return { blob: encodeWav(buf), filename: `${name}.wav` }
     })
 
   const exportSheet = () =>
-    run('Preparando hoja…', async () => ({ blob: new Blob([cheatSheetText(project, timeline)], { type: 'text/plain' }), filename: `${name}_hoja.txt` }))
+    run(t('Preparando hoja…'), async () => ({ blob: new Blob([cheatSheetText(project, timeline)], { type: 'text/plain' }), filename: `${name}_hoja.txt` }))
 
-  const exportBackup = () => run('Empaquetando proyecto…', async () => ({ blob: await exportProjectFile(project), filename: `${name}.queueit.json` }))
+  const exportBackup = () => run(t('Empaquetando proyecto…'), async () => ({ blob: await exportProjectFile(project), filename: `${name}.queueit.json` }))
 
   const nothing = !opts.click && !opts.cues && !(isAudio && opts.track)
 
   return (
-    <Sheet title="Exportar" onClose={onClose}>
+    <Sheet title={t('Exportar')} onClose={onClose}>
       <section className="group">
-        <h3>Audio WAV</h3>
-        {isAudio && <Check label="Pista de audio" checked={opts.track} onChange={(v) => setOpts({ ...opts, track: v })} />}
-        <Check label="Click" checked={opts.click} onChange={(v) => setOpts({ ...opts, click: v })} />
-        <Check label="Cues de voz" checked={opts.cues} onChange={(v) => setOpts({ ...opts, cues: v })} />
+        <h3>{t('Audio WAV')}</h3>
+        {isAudio && <Check label={t('Pista de audio')} checked={opts.track} onChange={(v) => setOpts({ ...opts, track: v })} />}
+        <Check label={t('Click')} checked={opts.click} onChange={(v) => setOpts({ ...opts, click: v })} />
+        <Check label={t('Cues de voz')} checked={opts.cues} onChange={(v) => setOpts({ ...opts, cues: v })} />
         <button className="btn btn-primary btn-block" onClick={exportAudio} disabled={!!busy || nothing}>
-          Exportar audio
+          {t('Exportar audio')}
         </button>
       </section>
       <section className="group">
-        <h3>Otros formatos</h3>
+        <h3>{t('Otros formatos')}</h3>
         <button className="btn btn-block" onClick={exportSheet} disabled={!!busy}>
-          Hoja de cues (.txt)
+          {t('Hoja de cues (.txt)')}
         </button>
         <button className="btn btn-block" onClick={exportBackup} disabled={!!busy}>
-          Respaldo del proyecto (.json)
+          {t('Respaldo del proyecto (.json)')}
         </button>
-        <p className="hint">El respaldo incluye los audios y se puede importar en otro teléfono.</p>
+        <p className="hint">{t('El respaldo incluye los audios y se puede importar en otro teléfono.')}</p>
       </section>
       {busy && (
         <p className="notice" role="status">
@@ -87,10 +88,10 @@ export function ExportSheet({ project, timeline, onClose }) {
           </p>
           <div className="grid-2">
             <button className="btn btn-primary" onClick={share}>
-              Compartir
+              {t('Compartir')}
             </button>
             <button className="btn" onClick={save}>
-              Guardar
+              {t('Guardar')}
             </button>
           </div>
         </div>
