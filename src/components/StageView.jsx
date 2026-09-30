@@ -4,7 +4,9 @@ import { HoldButton } from './HoldButton.jsx'
 import { t } from '../lib/i18n.js'
 
 // Vista de escenario: números grandes, legibles a un metro del atril.
-export function StageView({ project, timeline, cues, pos, playing, status, onToggle, onSkip, onClose }) {
+// setlist (opcional): { index, total, next, onPrev, onNext } para las listas de reproducción
+export function StageView({ project, timeline, cues, pos, playing, status, countIn, setlist, controlsDisabled, onToggle, onSkip, onClose }) {
+  const busy = controlsDisabled ?? !!status
   const info = positionInfo(timeline, pos)
   const section = project.kind === 'metronome' ? project.sections[info.section] : null
   const placed = cues.filter((c) => c.t != null)
@@ -18,17 +20,23 @@ export function StageView({ project, timeline, cues, pos, playing, status, onTog
         <Icon name="close" />
       </button>
       <div className="stage-top">
-        <span>{section?.name ?? project.title}</span>
+        {setlist && (
+          <span className="stage-setlist">
+            {setlist.index + 1}/{setlist.total} · {setlist.next ? `${t('Sigue')}: ${setlist.next}` : t('Última canción')}
+          </span>
+        )}
+        <span>{setlist ? project.title : (section?.name ?? project.title)}</span>
         <span>
+          {setlist && section ? `${section.name} · ` : ''}
           {info.num}/{section?.den ?? 4}, {Math.round(info.bpm || 0)} bpm
         </span>
       </div>
-      <div className="stage-bar" aria-live="off">
-        {info.bar}
+      <div className={`stage-bar${countIn ? ' is-count' : ''}`} aria-live="off">
+        {countIn ? countIn.n : info.bar}
       </div>
       <div className="stage-beats" aria-hidden="true">
-        {Array.from({ length: info.num }, (_, i) => (
-          <span key={i} className={`dot${i === 0 ? ' is-down' : ''}${playing && info.beat === i + 1 ? ' is-on' : ''}`} />
+        {Array.from({ length: countIn ? countIn.of : info.num }, (_, i) => (
+          <span key={i} className={`dot${i === 0 ? ' is-down' : ''}${playing && (countIn ? countIn.n : info.beat) === i + 1 ? ' is-on' : ''}`} />
         ))}
       </div>
       <div className="stage-cue">{current ? current.text || '♪' : ''}</div>
@@ -44,16 +52,26 @@ export function StageView({ project, timeline, cues, pos, playing, status, onTog
           <span className="muted">{t('Sin más cues')}</span>
         )}
       </div>
-      <div className="stage-controls">
-        <HoldButton onStep={() => onSkip(-1)} disabled={!!status} aria-label={t('Retroceder un compás (mantén para seguir)')}>
+      <div className={`stage-controls${setlist ? ' has-setlist' : ''}`}>
+        {setlist && (
+          <button className="icon-btn" onClick={setlist.onPrev} disabled={busy} aria-label={t('Canción anterior')}>
+            <Icon name="prev" fill size={26} />
+          </button>
+        )}
+        <HoldButton onStep={() => onSkip(-1)} disabled={busy} aria-label={t('Retroceder un compás (mantén para seguir)')}>
           <Icon name="rew" fill size={30} />
         </HoldButton>
-        <button className={`play-btn stage-play${playing ? ' is-playing' : ''}`} onClick={onToggle} disabled={!!status} aria-label={playing ? t('Pausar') : t('Reproducir')}>
+        <button className={`play-btn stage-play${playing ? ' is-playing' : ''}`} onClick={onToggle} disabled={busy} aria-label={playing ? t('Pausar') : t('Reproducir')}>
           <Icon name={playing ? 'pause' : 'play'} fill size={40} />
         </button>
-        <HoldButton onStep={() => onSkip(1)} disabled={!!status} aria-label={t('Adelantar un compás (mantén para seguir)')}>
+        <HoldButton onStep={() => onSkip(1)} disabled={busy} aria-label={t('Adelantar un compás (mantén para seguir)')}>
           <Icon name="fwd" fill size={30} />
         </HoldButton>
+        {setlist && (
+          <button className="icon-btn" onClick={setlist.onNext} disabled={busy || !setlist.next} aria-label={t('Canción siguiente')}>
+            <Icon name="next" fill size={26} />
+          </button>
+        )}
       </div>
       {status && <p className="muted">{status}</p>}
     </div>

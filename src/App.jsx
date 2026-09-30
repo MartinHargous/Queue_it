@@ -1,12 +1,14 @@
 import { useEffect, useState } from 'react'
 import { Home } from './components/Home.jsx'
 import { Editor } from './components/Editor.jsx'
+import { SetlistView } from './components/SetlistView.jsx'
 import { requestPersistence } from './lib/db.js'
 
-// Rutas por hash: #/  y  #/p/<id>. Así el botón atrás de Android funciona.
+// Rutas por hash: #/, #/listas, #/p/<id> (pista) y #/l/<id> (lista). Así el botón atrás de Android funciona.
 const parse = () => {
-  const m = location.hash.match(/^#\/p\/(.+)$/)
-  return m ? { name: 'editor', id: decodeURIComponent(m[1]) } : { name: 'home' }
+  const m = location.hash.match(/^#\/(p|l)\/(.+)$/)
+  if (m) return { name: m[1] === 'p' ? 'editor' : 'setlist', id: decodeURIComponent(m[2]) }
+  return { name: 'home', tab: location.hash === '#/listas' ? 'lists' : 'tracks' }
 }
 
 let cameFromHome = false
@@ -21,6 +23,13 @@ export default function App() {
     return () => window.removeEventListener('hashchange', on)
   }, [])
 
+  const back = (fallback) => () => {
+    if (cameFromHome) history.back()
+    else location.replace(fallback)
+    cameFromHome = false
+  }
+
+  if (route.name === 'setlist') return <SetlistView key={route.id} id={route.id} goHome={back('#/listas')} />
   if (route.name === 'editor') {
     return (
       <Editor
@@ -36,9 +45,15 @@ export default function App() {
   }
   return (
     <Home
+      tab={route.tab}
+      setTab={(tab) => location.replace(tab === 'lists' ? '#/listas' : '#/')}
       go={(id) => {
         cameFromHome = true
         location.hash = `#/p/${encodeURIComponent(id)}`
+      }}
+      goList={(id) => {
+        cameFromHome = true
+        location.hash = `#/l/${encodeURIComponent(id)}`
       }}
     />
   )

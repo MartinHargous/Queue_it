@@ -1047,3 +1047,93 @@ input[type='range'].seek {
     opacity: 0.5;
   }
 }
+
+/* cuenta inicial y listas */
+.pos-bar.is-count,
+.stage-bar.is-count {
+  color: var(--amber);
+}
+.stage-top .stage-setlist {
+  font-size: 1rem;
+  color: var(--muted);
+  order: 3;
+}
+.stage-controls.has-setlist {
+  gap: 6px;
+}
+.stage-controls.has-setlist .icon-btn {
+  width: 48px;
+  height: 48px;
+}
+.stage-controls.has-setlist .stage-play {
+  width: 84px;
+  height: 84px;
+}
+.setlist-summary {
+  margin: 4px 4px 0;
+}
+.setlist-items {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.setlist-item {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  border-bottom: 1px solid var(--line);
+}
+.setlist-item .icon-btn {
+  width: 40px;
+  height: 44px;
+  flex-shrink: 0;
+}
+.setlist-song {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 4px;
+  border: 0;
+  background: none;
+  text-align: left;
+}
+.setlist-num {
+  font: 700 1.5rem var(--display);
+  color: var(--amber);
+  min-width: 1.4em;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+.pick-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.pick-row {
+  display: grid;
+  grid-template-columns: 32px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 12px 4px;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  background: none;
+  text-align: left;
+}
+.pick-mark {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 2px solid var(--line);
+  display: grid;
+  place-items: center;
+  font: 700 0.95rem var(--display);
+}
+.pick-row.is-picked .pick-mark {
+  background: var(--amber);
+  border-color: var(--amber);
+  color: var(--amber-ink);
+}

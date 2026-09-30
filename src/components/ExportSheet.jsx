@@ -8,7 +8,7 @@ import { t } from '../lib/i18n.js'
 
 export function ExportSheet({ project, timeline, onClose }) {
   const isAudio = project.kind === 'audio'
-  const [opts, setOpts] = useState({ track: true, click: !isAudio || project.mix.clickOnAudio, cues: true })
+  const [opts, setOpts] = useState({ track: true, click: !isAudio || project.mix.clickOnAudio, cues: true, countIn: !!project.countIn?.enabled })
   const [busy, setBusy] = useState(null)
   const [msg, setMsg] = useState(null)
   const [ready, setReady] = useState(null) // { blob, filename }
@@ -62,6 +62,7 @@ export function ExportSheet({ project, timeline, onClose }) {
         {isAudio && <Check label={t('Pista de audio')} checked={opts.track} onChange={(v) => setOpts({ ...opts, track: v })} />}
         <Check label={t('Click')} checked={opts.click} onChange={(v) => setOpts({ ...opts, click: v })} />
         <Check label={t('Cues de voz')} checked={opts.cues} onChange={(v) => setOpts({ ...opts, cues: v })} />
+        {project.countIn?.enabled && <Check label={t('Cuenta inicial')} checked={opts.countIn} onChange={(v) => setOpts({ ...opts, countIn: v })} />}
         <button className="btn btn-primary btn-block" onClick={exportAudio} disabled={!!busy || nothing}>
           {t('Exportar audio')}
         </button>
