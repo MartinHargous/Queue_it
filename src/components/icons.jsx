@@ -15,6 +15,7 @@ const P = {
   stage: 'M4 8V4h4M20 8V4h-4M4 16v4h4M20 16v4h-4',
   trash: 'M5 7h14M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3',
   share: 'M12 15V3M8 7l4-4 4 4M5 12v8h14v-8',
+  download: 'M12 3v12M8 11l4 4 4-4M5 20h14',
   up: 'M6 15l6-6 6 6',
   down: 'M6 9l6 6 6-6',
   copy: 'M9 9h10v10H9zM5 15V5h10',

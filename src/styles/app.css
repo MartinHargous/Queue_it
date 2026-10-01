@@ -1259,3 +1259,42 @@ input[type='range'].seek {
     font-size: clamp(8rem, 26vh, 18rem);
   }
 }
+
+/* aviso de instalación */
+.install-banner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 4px 12px 10px;
+  padding: 10px 6px 10px 12px;
+  border-radius: var(--r-md);
+  background: var(--surface);
+  border: 1px solid var(--line);
+}
+.install-banner img {
+  border-radius: 9px;
+  flex-shrink: 0;
+}
+.install-text {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+  font-size: 0.875rem;
+}
+.install-text strong {
+  font: 600 1.1rem var(--display);
+}
+.install-banner .btn {
+  min-height: 40px;
+  padding: 0 14px;
+}
+.install-mini {
+  margin-left: auto;
+  color: var(--amber);
+}
+@media (max-width: 420px) {
+  .install-banner img {
+    display: none;
+  }
+}

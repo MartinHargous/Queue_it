@@ -27,6 +27,7 @@ export default defineConfig({
         short_name: 'Queue it',
         description: 'Guías de click y cues de voz para músicos. Funciona sin internet.',
         lang: 'es',
+        id: './',
         start_url: './',
         scope: './',
         display: 'standalone',

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { listProjects, saveProject, putBlob, listSetlists, saveSetlist } from '../lib/db.js'
 import { newProject, newSetlist, buildTimeline, formatTime, uid } from '../lib/model.js'
 import { importProjectFile } from '../lib/share.js'
+import { useInstallState, promptInstall } from '../lib/install.js'
 import { decodeBlob } from '../lib/audio/context.js'
 import { Sheet } from './Sheet.jsx'
 import { Icon } from './icons.jsx'
@@ -17,6 +18,22 @@ export function Home({ go, goList, tab = 'tracks', setTab }) {
   const importInput = useRef(null)
 
   const [setlists, setSetlists] = useState(null)
+  const install = useInstallState()
+  const [hideInstall, setHideInstall] = useState(() => {
+    try {
+      return localStorage.getItem('queueit.installHint') === 'hidden'
+    } catch {
+      return false
+    }
+  })
+  const dismissInstall = () => {
+    setHideInstall(true)
+    try {
+      localStorage.setItem('queueit.installHint', 'hidden')
+    } catch {
+      /* sin almacenamiento */
+    }
+  }
 
   useEffect(() => {
     listProjects().then(setProjects)
@@ -77,6 +94,11 @@ export function Home({ go, goList, tab = 'tracks', setTab }) {
           <img src="favicon.svg" alt="" width="34" height="34" />
           Queue it
         </h1>
+        {install === 'prompt' && hideInstall && (
+          <button className="icon-btn install-mini" onClick={promptInstall} aria-label={t('Instalar app')} title={t('Instalar app')}>
+            <Icon name="download" />
+          </button>
+        )}
         <div className="lang-picker" role="radiogroup" aria-label={t('Idioma')}>
           {LANGS.map(([code, name]) => (
             <button key={code} role="radio" aria-checked={lang === code} className={lang === code ? 'is-active' : ''} onClick={() => setLang(code)} title={name}>
@@ -85,6 +107,28 @@ export function Home({ go, goList, tab = 'tracks', setTab }) {
           ))}
         </div>
       </header>
+
+      {!hideInstall && (install === 'prompt' || install === 'ios') && (
+        <div className="install-banner" role="region" aria-label={t('Instalar app')}>
+          <img src="favicon.svg" alt="" width="40" height="40" />
+          <div className="install-text">
+            <strong>{t('Instala Queue it')}</strong>
+            <span className="muted">
+              {install === 'ios'
+                ? t('En Safari toca Compartir y luego «Agregar a inicio».')
+                : t('Se abre como una app, a pantalla completa y sin internet.')}
+            </span>
+          </div>
+          {install === 'prompt' && (
+            <button className="btn btn-primary" onClick={promptInstall}>
+              {t('Instalar')}
+            </button>
+          )}
+          <button className="icon-btn" onClick={dismissInstall} aria-label={t('Cerrar')}>
+            <Icon name="close" />
+          </button>
+        </div>
+      )}
 
       <nav className="tabs" role="tablist">
         {[

@@ -222,4 +222,9 @@ export default {
   "con cuenta": "com contagem",
   "Última canción": "Última música",
   "espacio": "espaço",
+  "Instalar app": "Instalar app",
+  "Instala Queue it": "Instale o Queue it",
+  "En Safari toca Compartir y luego «Agregar a inicio».": "No Safari toque Compartilhar e depois “Adicionar à Tela de Início”.",
+  "Se abre como una app, a pantalla completa y sin internet.": "Abre como um app, em tela cheia e sem internet.",
+  "Instalar": "Instalar",
 }
