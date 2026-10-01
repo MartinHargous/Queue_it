@@ -47,7 +47,7 @@ export const AudioPanel = memo(function AudioPanel({ project, update, timeline, 
     setProgress(-1)
     try {
       const r = await detectInWorker(buffer, {
-        num: grid?.num ?? 4,
+        num: null, // estima el compás (3 o 4)
         method,
         onProgress: (v, label) => {
           setProgress(v)
@@ -55,8 +55,10 @@ export const AudioPanel = memo(function AudioPanel({ project, update, timeline, 
         },
       })
       if (!r.beats.length) throw new Error(t('No se encontró un pulso claro. Usa tempo fijo.'))
-      if (r.engine === 'basic') setInfo(t('No se pudo cargar el detector avanzado; se usó el básico. Revisa el resultado.'))
-      update((p) => ({ ...p, grid: newGrid({ bpm: r.bpm, offset: r.offset, beats: r.beats, downbeat: r.downbeat, num: p.grid?.num ?? 4 }) }))
+      const num = r.num ?? 4
+      const meterInfo = t('Compás detectado: {num}/4. Si no es correcto, cámbialo en «Tiempos por compás».', { num })
+      setInfo(r.engine === 'basic' ? `${t('No se pudo cargar el detector avanzado; se usó el básico. Revisa el resultado.')} ${meterInfo}` : meterInfo)
+      update((p) => ({ ...p, grid: newGrid({ bpm: r.bpm, offset: r.offset, beats: r.beats, downbeat: r.downbeat, num }) }))
     } catch (err) {
       setError(err.message)
     } finally {

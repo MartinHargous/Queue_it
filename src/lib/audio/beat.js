@@ -20,7 +20,8 @@ async function toMono44k(audioBuffer) {
 // Lanza la detección de pulso en un worker con el audio ya decodificado.
 // method: 'degara' (rápido, por defecto) | 'multifeature' (más lento; no siempre mejor).
 // onProgress(valor, etiqueta): valor 0–1, o -1 cuando no se puede medir el avance.
-export async function detectInWorker(audioBuffer, { num = 4, method = 'degara', onProgress } = {}) {
+// num: tiempos por compás fijos, o null para que se estimen (3 o 4).
+export async function detectInWorker(audioBuffer, { num = null, method = 'degara', onProgress } = {}) {
   const mono = await toMono44k(audioBuffer)
   return new Promise((resolve, reject) => {
     const worker = new Worker(new URL('./beat.worker.js', import.meta.url), { type: 'module' })

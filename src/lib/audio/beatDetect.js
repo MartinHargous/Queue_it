@@ -2,7 +2,8 @@
 // 1) Envolvente de onsets por flujo espectral (log-magnitud, rectificado)
 // 2) Tempo global por autocorrelación con prior log-normal centrado en 120 bpm
 // 3) Seguimiento de beats por programación dinámica (Ellis, 2007)
-// 4) Primer tiempo del compás estimado con la energía de graves en cada fase
+// 4) Compás (3 o 4 tiempos) y primer tiempo: qué fase y qué período repiten mejor los acentos
+//    de graves, los ataques y los cambios de armonía (los acordes suelen cambiar en el 1)
 
 const N_FFT = 1024
 const HOP = 256
@@ -54,7 +55,9 @@ function downsample(x, sr) {
   return { y, sr: sr / f }
 }
 
-function onsetEnvelope(y, sr, onProgress) {
+const NB = 16 // bandas para el perfil espectral de cada pulso (cambios de armonía)
+
+function onsetEnvelope(y, sr, onProgress, withBands = false) {
   const pad = N_FFT / 2
   const frames = Math.max(1, Math.floor((y.length) / HOP))
   const win = new Float32Array(N_FFT)
@@ -63,6 +66,16 @@ function onsetEnvelope(y, sr, onProgress) {
   const lowBin = Math.max(2, Math.floor((200 / sr) * N_FFT))
   const env = new Float32Array(frames)
   const low = new Float32Array(frames)
+  // bandas logarítmicas de 60 Hz a 5 kHz
+  const bands = withBands ? new Float32Array(frames * NB) : null
+  const bandOf = new Int8Array(N_FFT / 2).fill(-1)
+  if (withBands) {
+    for (let k = 1; k < N_FFT / 2; k++) {
+      const hz = (k * sr) / N_FFT
+      if (hz < 60 || hz > 5000) continue
+      bandOf[k] = Math.min(NB - 1, Math.floor((Math.log(hz / 60) / Math.log(5000 / 60)) * NB))
+    }
+  }
   let prev = new Float32Array(maxBin)
   const re = new Float32Array(N_FFT)
   const im = new Float32Array(N_FFT)
@@ -80,6 +93,7 @@ function onsetEnvelope(y, sr, onProgress) {
     for (let k = 1; k < maxBin; k++) {
       const m = Math.log1p(100 * Math.hypot(re[k], im[k]))
       cur[k] = m
+      if (bands && bandOf[k] >= 0) bands[f * NB + bandOf[k]] += m
       const d = m - prev[k]
       if (d > 0) {
         flux += d
@@ -91,7 +105,7 @@ function onsetEnvelope(y, sr, onProgress) {
     prev = cur
     if (onProgress && f % 2000 === 0) onProgress(0.1 + 0.5 * (f / frames))
   }
-  return { env: normalize(detrend(env, sr)), low: normalize(detrend(low, sr)) }
+  return { env: normalize(detrend(env, sr)), low: normalize(detrend(low, sr)), bands }
 }
 
 function detrend(env, sr) {
@@ -253,9 +267,10 @@ export function detectBeats(channelData, sampleRate, { num = 4, onProgress } = {
     const iv = beats.slice(1).map((t, i) => t - beats[i]).sort((a, b) => a - b)
     bpm = 60 / iv[Math.floor(iv.length / 2)]
   }
-  const downbeat = beats.length ? estimateDownbeat(frames, low, env, num) : 0
+  // num = null: estima también el compás
+  const meter = beats.length >= 12 ? meterFromBeats(channelData, sampleRate, beats, num) : { num: num ?? 4, downbeat: beats.length ? estimateDownbeat(frames, low, env, num ?? 4) : 0 }
   onProgress?.(1)
-  return { bpm, beats, downbeat, offset: beats[downbeat] ?? 0 }
+  return { bpm, beats, num: meter.num, downbeat: meter.downbeat, offset: beats[meter.downbeat] ?? 0 }
 }
 
 // Primer tiempo del compás para pulsos calculados por otro detector (p. ej. essentia).
@@ -266,4 +281,100 @@ export function downbeatFromBeats(channelData, sampleRate, beats, num = 4) {
   const { env, low } = onsetEnvelope(y, sr)
   const frames = beats.map((t) => Math.round((t * sr) / HOP))
   return estimateDownbeat(frames, low, env, num)
+}
+
+const zscore = (a) => {
+  const m = a.reduce((x, y) => x + y, 0) / a.length
+  const sd = Math.sqrt(a.reduce((x, y) => x + (y - m) ** 2, 0) / a.length) || 1
+  return a.map((v) => (v - m) / sd)
+}
+
+// Fuerza de cada pulso como posible "tiempo 1": ataque de graves, ataque general y
+// cuánto cambia el perfil espectral (armonía) respecto del pulso anterior.
+function beatAccents(channelData, sampleRate, beats) {
+  const { y, sr } = downsample(channelData, sampleRate)
+  const { env, low, bands } = onsetEnvelope(y, sr, null, true)
+  const nFrames = env.length
+  const fr = beats.map((t) => Math.min(nFrames - 1, Math.max(0, Math.round((t * sr) / HOP))))
+  const peak = (arr, f) => Math.max(arr[f - 1] ?? 0, arr[f], arr[f + 1] ?? 0, arr[f + 2] ?? 0)
+  const prof = fr.map((f, i) => {
+    // solo el ataque (~150 ms): refleja las notas nuevas y no la cola de las anteriores
+    const end = Math.max(f + 1, Math.min(nFrames, fr[i + 1] ?? f + 8, f + Math.round((0.15 * sr) / HOP)))
+    const v = new Float32Array(NB)
+    for (let k = f; k < end; k++) for (let b = 0; b < NB; b++) v[b] += bands[k * NB + b]
+    let norm = 0
+    for (let b = 0; b < NB; b++) norm += v[b] * v[b]
+    norm = Math.sqrt(norm) || 1
+    for (let b = 0; b < NB; b++) v[b] /= norm
+    return v
+  })
+  // Cambio de armonía para un compás de m tiempos: perfil de los m pulsos que empiezan en i
+  // contra los m anteriores. Dentro del compás el acorde se mantiene aunque el bajo alterne.
+  const sum = (a, b) => {
+    const v = new Float32Array(NB)
+    for (let i = a; i < b; i++) for (let k = 0; k < NB; k++) v[k] += prof[i][k]
+    return v
+  }
+  const novelty = (m) =>
+    prof.map((_, i) => {
+      if (i < m || i + m > prof.length) return 0
+      const x = sum(i, i + m)
+      const w = sum(i - m, i)
+      let dot = 0
+      let nx = 0
+      let nw = 0
+      for (let k = 0; k < NB; k++) {
+        dot += x[k] * w[k]
+        nx += x[k] * x[k]
+        nw += w[k] * w[k]
+      }
+      return 1 - dot / (Math.sqrt(nx * nw) || 1)
+    })
+  const zl = zscore(fr.map((f) => peak(low, f)))
+  const ze = zscore(fr.map((f) => peak(env, f)))
+  // acentos(m): cuánto parece cada pulso el comienzo de un compás de m tiempos
+  // (m = 1 compara cada pulso con el anterior)
+  return (m) => {
+    const zn = zscore(novelty(m))
+    return fr.map((_, i) => zl[i] + 0.6 * ze[i] + (m === 1 ? 1.2 : 1.5) * zn[i])
+  }
+}
+
+// Mejor fase para un compás de m tiempos y cuánto se destaca del resto
+function phaseContrast(acc, m) {
+  let best = { phase: 0, score: -Infinity }
+  for (let p = 0; p < m; p++) {
+    let on = 0
+    let nOn = 0
+    let off = 0
+    let nOff = 0
+    acc.forEach((v, i) => {
+      if (i % m === p) {
+        on += v
+        nOn++
+      } else {
+        off += v
+        nOff++
+      }
+    })
+    const score = (nOn ? on / nOn : 0) - (nOff ? off / nOff : 0)
+    if (score > best.score) best = { phase: p, score }
+  }
+  return best
+}
+
+// Estima tiempos por compás (3 o 4) y el primer tiempo a partir de los pulsos detectados.
+// Ante la duda elige 4, que es lo más común. Si `forceNum` viene, solo busca el primer tiempo.
+export function meterFromBeats(channelData, sampleRate, beats, forceNum = null) {
+  if (beats.length < 12) return { num: forceNum ?? 4, downbeat: 0, scores: {} }
+  const accents = beatAccents(channelData, sampleRate, beats)
+  // El compás se decide con el cambio pulso a pulso (igual de justo para 3 y para 4)...
+  const neutral = accents(1)
+  const c3 = phaseContrast(neutral, 3)
+  const c4 = phaseContrast(neutral, 4)
+  const num = forceNum ?? (c3.score > c4.score * 1.15 && c3.score > 0.3 ? 3 : 4)
+  // ...y el primer tiempo, comparando compases enteros (no confunde el 1 con el 3)
+  const bar = accents(num)
+  const { phase } = phaseContrast(bar.map((v, i) => v + 0.3 * neutral[i]), num)
+  return { num, downbeat: phase, scores: { 3: c3.score, 4: c4.score } }
 }
