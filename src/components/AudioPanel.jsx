@@ -202,7 +202,7 @@ export const AudioPanel = memo(function AudioPanel({ project, update, timeline, 
               <button className="btn" onClick={() => shiftDownbeat(-1)} aria-label={t('Un pulso antes')}>
                 {t('− 1 pulso')}
               </button>
-              <button className="btn" onClick={downbeatHere} disabled={playing}>
+              <button className="btn" onClick={downbeatHere}>
                 {t('Aquí')}
               </button>
               <button className="btn" onClick={() => shiftDownbeat(1)} aria-label={t('Un pulso después')}>

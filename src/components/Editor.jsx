@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useProject } from '../lib/useProject.js'
-import { buildTimeline, cueTime, cueBarBeat, newTimeCue, sortCues, formatTime, formatTimePrecise, skipTarget } from '../lib/model.js'
+import { buildTimeline, cueTime, cueBarBeat, newTimeCue, sortCues, formatTime, formatTimePrecise, skipTarget, mapMusicalTime } from '../lib/model.js'
 import { Player, loadResources, positionInfo } from '../lib/audio/engine.js'
 import { resumeContext } from '../lib/audio/context.js'
 import { keepAwake } from '../lib/wakeLock.js'
@@ -75,6 +75,29 @@ export function Editor({ id, goHome }) {
     },
     [player],
   )
+
+  // Cambios mientras suena (tempo, compases, cues, grilla): se aplican al instante, sin pausar.
+  // En el metrónomo se conserva el compás y el tiempo; en audio, el segundo de la canción.
+  useEffect(() => {
+    const prev = player.args
+    if (!playing || !player.playing || !prev || prev.project === project || !timeline) return
+    const map = project.kind === 'metronome' ? (t) => mapMusicalTime(prev.timeline, timeline, t) : (t) => t
+    player.update(project, timeline, prev.res, map)
+    // evita mostrar un cuadro con el segundo viejo sobre la grilla nueva
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- sincroniza con el reproductor (sistema externo)
+    setPos(player.position)
+    // Un cue nuevo o una voz distinta necesitan preparar su audio (las voces quedan en caché)
+    if (prev.project.cues === project.cues && prev.project.tts === project.tts) return
+    let alive = true
+    loadResources(project)
+      .then((res) => {
+        if (alive && player.playing && player.args?.project === project) player.update(project, timeline, res)
+      })
+      .catch(() => {})
+    return () => {
+      alive = false
+    }
+  }, [project, timeline, playing, player])
 
   useEffect(() => {
     if (!toast) return
@@ -183,7 +206,7 @@ export function Editor({ id, goHome }) {
   const panels = {
     structure:
       project.kind === 'metronome' ? (
-        <SectionsPanel project={project} update={update} disabled={playing} />
+        <SectionsPanel project={project} update={update} />
       ) : (
         <AudioPanel project={project} update={update} timeline={timeline} getPos={getPos} playing={playing} startTime={startTime} setStartTime={setStartTime} />
       ),

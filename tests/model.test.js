@@ -1,6 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { newProject, newSection, newCue, newTimeCue, buildTimeline, cueTime, cueBarBeat, buildEvents, beatIndexAt, newGrid, sortCues, skipTarget, countInPlan, moveItem, newSetlist } from '../src/lib/model.js'
+import { newProject, newSection, newCue, newTimeCue, buildTimeline, cueTime, cueBarBeat, buildEvents, beatIndexAt, newGrid, sortCues, skipTarget, countInPlan, moveItem, newSetlist, mapMusicalTime } from '../src/lib/model.js'
 
 const near = (a, b, eps = 1e-9) => assert.ok(Math.abs(a - b) < eps, `${a} ≉ ${b}`)
 
@@ -172,4 +172,17 @@ test('listas: mover canciones respeta los bordes', () => {
   const same = ['a', 'b']
   assert.equal(moveItem(same, 0, -1), same)
   assert.equal(newSetlist('Show').items.length, 0)
+})
+
+test('cambiar el tempo mientras suena conserva el compás y el tiempo', () => {
+  const p = newProject('metronome')
+  p.sections = [{ ...newSection(), bars: 8, bpm: 120, num: 4, den: 4 }]
+  const before = buildTimeline(p)
+  p.sections[0].bpm = 60
+  const after = buildTimeline(p)
+  // 4,25 s a 120 bpm = compás 3, tiempo 1, a mitad del pulso → a 60 bpm: 8,5 s
+  near(mapMusicalTime(before, after, 4.25), 8.5)
+  // si el compás desaparece, va al final
+  p.sections[0].bars = 1
+  near(mapMusicalTime(before, buildTimeline(p), 10), buildTimeline(p).duration)
 })
