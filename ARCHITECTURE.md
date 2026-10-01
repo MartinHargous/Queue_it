@@ -177,7 +177,12 @@ Corre en `beat.worker.js` para no congelar la interfaz. Hay dos motores:
 
 **2. Detector propio (respaldo, `beatDetect.js`).** Flujo espectral, autocorrelación con prior en 120 bpm y seguimiento por programación dinámica (Ellis, 2007). Se usa solo si essentia no carga o no encuentra pulsos, y la interfaz avisa. **Limitación conocida:** en música sin percusión acierta el tempo pero suele colocar los pulsos en el lugar equivocado (p. ej. sobre las corcheas). Por eso dejó de ser el motor principal.
 
-**Primer tiempo del compás.** Para ambos motores lo estima `downbeatFromBeats()`: la fase, entre las `num` posibles, con más energía de graves y de onset en sus pulsos (el bombo o el bajo suelen caer en el 1). Es una heurística: en música sin graves marcados puede equivocarse, y por eso existen los botones **−1 pulso / Aquí / +1 pulso**.
+**Compás y primer tiempo.** Para ambos motores los estima `meterFromBeats()` a partir de los pulsos detectados. A cada pulso le asigna un "acento": ataque de graves, ataque general y cambio de armonía (perfil espectral de 16 bandas en los primeros 150 ms de cada pulso).
+
+- **Compás (3 o 4 tiempos):** se elige el período cuyos acentos se repiten con más contraste, comparando cada pulso con el anterior para que la medida sea igual de justa para 3 y para 4. Ante la duda elige 4. La interfaz avisa el compás detectado y se puede cambiar en «Tiempos por compás».
+- **Primer tiempo:** compara compases enteros (los m pulsos que empiezan en cada fase contra los m anteriores). Así no confunde el 1 con el 3 cuando el bajo alterna.
+
+Es una heurística: sin cambios de armonía ni graves marcados puede equivocarse, y por eso existen los botones **−1 pulso / Aquí / +1 pulso**. `tests/beat.test.js` la fija con valses y piezas en 4/4 sintéticas sin batería (`tests/meter-fixtures.js`).
 
 Ajustes manuales siempre disponibles: **½×** y **2×** (errores de octava), ajuste fino en ms, modo **Tempo fijo** con *tap tempo* y tiempos por compás.
 
@@ -289,5 +294,5 @@ Flujo completo probado en Chromium con viewport de teléfono (390×844): crear u
 3. **Cues con anticipación**: que la voz empiece N tiempos antes del compás marcado, para decir "coro en dos" y que el coro caiga en su lugar.
 4. **Cuenta inicial** configurable, loops de sección para ensayo y listas de canciones (setlists).
 5. **Exportar a Opus/MP3** para archivos más livianos.
-6. **Mejor detección del primer tiempo y de cambios de compás**: hoy el primer tiempo es una heurística de energía de graves y la grilla tiene un único compás por pista. Un modelo de beat y downbeat (p. ej. vía ONNX Runtime Web) podría mejorarlo.
+6. **Mejor detección del primer tiempo y de cambios de compás**: hoy compás y primer tiempo son heurísticas (graves, ataques y armonía), solo distinguen 3 y 4 tiempos y la grilla tiene un único compás por pista. Un modelo de beat y downbeat (p. ej. vía ONNX Runtime Web) podría mejorarlo.
 7. **Más tests**: `model.js` ya tiene cobertura con `node:test`; falta `beatDetect.js` (es puro y se puede probar en Node con audio sintético) y un test de humo con Playwright.

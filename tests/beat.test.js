@@ -3,7 +3,8 @@
 import { test, before } from 'node:test'
 import assert from 'node:assert/strict'
 import { createRequire } from 'node:module'
-import { downbeatFromBeats } from '../src/lib/audio/beatDetect.js'
+import { downbeatFromBeats, meterFromBeats } from '../src/lib/audio/beatDetect.js'
+import { song } from './meter-fixtures.js'
 
 const require = createRequire(import.meta.url)
 const SR = 44100
@@ -95,3 +96,23 @@ test('el primer tiempo del compás cae en el acento', () => {
   // el acento está en el primer pulso detectado y cada 4: la fase correcta es 0
   assert.equal(down, 0)
 })
+
+// Compás: antes siempre quedaba en 4/4. Música sin batería en 3/4 y 4/4.
+const meterCases = [
+  { bpm: 120, num: 3, style: 'oompah' },
+  { bpm: 90, num: 3, style: 'oompah' },
+  { bpm: 76, num: 3, style: 'arp' },
+  { bpm: 120, num: 4, style: 'oompah' },
+  { bpm: 100, num: 4, style: 'arp' },
+]
+for (const c of meterCases) {
+  test(`detecta el compás ${c.num}/4 (${c.style}, ${c.bpm} bpm) y su primer tiempo`, () => {
+    const { y, downbeats } = song(c)
+    const { beats } = detect(y, 'degara')
+    const m = meterFromBeats(y, SR, beats)
+    assert.equal(m.num, c.num)
+    const marked = beats.filter((b, i) => i % m.num === m.downbeat && b > downbeats[0] - 0.1 && b < downbeats.at(-1) + 0.1)
+    const hits = marked.filter((b) => downbeats.some((d) => Math.abs(d - b) < 0.07)).length
+    assert.ok(hits >= marked.length - 1, `primer tiempo ${hits}/${marked.length}`)
+  })
+}

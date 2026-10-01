@@ -227,4 +227,6 @@ export default {
   "En Safari toca Compartir y luego «Agregar a inicio».": "In Safari tap Share, then “Add to Home Screen”.",
   "Se abre como una app, a pantalla completa y sin internet.": "Opens like an app, full screen and offline.",
   "Instalar": "Install",
+  "Compás detectado: {num}/4. Si no es correcto, cámbialo en «Tiempos por compás».": "Detected meter: {num}/4. If it's wrong, change it in “Beats per bar”.",
+  "Buscando el compás y el primer tiempo…": "Finding the meter and the downbeat…",
 }

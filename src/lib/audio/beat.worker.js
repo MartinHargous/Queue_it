@@ -1,7 +1,7 @@
 // Detección de pulso en un Web Worker.
 // Motor principal: essentia.js (WASM, funciona sin conexión). Si no carga o falla,
 // se usa el detector propio de beatDetect.js, que es más simple.
-import { detectBeats, downbeatFromBeats } from './beatDetect.js'
+import { detectBeats, meterFromBeats } from './beatDetect.js'
 
 let essentiaPromise = null
 
@@ -64,11 +64,13 @@ self.onmessage = async (e) => {
       post({ type: 'progress', value: -1, label: 'Analizando el ritmo…' })
       const r = await detectWithEssentia(channelData, method)
       if (r.beats.length < 4) throw new Error('essentia no encontró pulsos')
-      post({ type: 'progress', value: -1, label: 'Buscando el primer tiempo…' })
-      const downbeat = downbeatFromBeats(channelData, sampleRate, r.beats, num)
+      post({ type: 'progress', value: -1, label: 'Buscando el compás y el primer tiempo…' })
+      const meter = meterFromBeats(channelData, sampleRate, r.beats, num) // num null = estimarlo
+      const downbeat = meter.downbeat
       result = {
         beats: r.beats,
         bpm: pickBpm(r.beats, r.bpm),
+        num: meter.num,
         downbeat,
         offset: r.beats[downbeat] ?? 0,
         engine: 'essentia',
