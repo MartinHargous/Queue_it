@@ -105,7 +105,7 @@ export function SetlistView({ id, goHome }) {
         {items.length === 0 ? (
           <div className="empty small">
             <p className="empty-title">{t('Lista vacía')}</p>
-            <p className="muted">{t('Agrega pistas para tocarlas una tras otra, con su cuenta inicial y sus cues.')}</p>
+            <p className="muted">{t('Agrega pistas para tocarlas una tras otra, con su cuenta inicial y sus colas.')}</p>
           </div>
         ) : (
           <ol className="setlist-items">
