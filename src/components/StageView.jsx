@@ -58,13 +58,13 @@ export function StageView({ project, timeline, cues, pos, playing, status, count
             <Icon name="prev" fill size={26} />
           </button>
         )}
-        <HoldButton onStep={() => onSkip(-1)} disabled={busy} aria-label={t('Retroceder un compás (mantén para seguir)')}>
+        <HoldButton data-shortcut="back" onStep={() => onSkip(-1)} disabled={busy} aria-label={t('Retroceder un compás (mantén para seguir)')}>
           <Icon name="rew" fill size={30} />
         </HoldButton>
-        <button className={`play-btn stage-play${playing ? ' is-playing' : ''}`} onClick={onToggle} disabled={busy} aria-label={playing ? t('Pausar') : t('Reproducir')}>
+        <button data-shortcut="play" className={`play-btn stage-play${playing ? ' is-playing' : ''}`} onClick={onToggle} disabled={busy} aria-label={playing ? t('Pausar') : t('Reproducir')}>
           <Icon name={playing ? 'pause' : 'play'} fill size={40} />
         </button>
-        <HoldButton onStep={() => onSkip(1)} disabled={busy} aria-label={t('Adelantar un compás (mantén para seguir)')}>
+        <HoldButton data-shortcut="fwd" onStep={() => onSkip(1)} disabled={busy} aria-label={t('Adelantar un compás (mantén para seguir)')}>
           <Icon name="fwd" fill size={30} />
         </HoldButton>
         {setlist && (

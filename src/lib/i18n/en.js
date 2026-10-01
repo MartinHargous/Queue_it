@@ -221,4 +221,5 @@ export default {
   "canciones": "songs",
   "con cuenta": "with count-in",
   "Última canción": "Last song",
+  "espacio": "space",
 }

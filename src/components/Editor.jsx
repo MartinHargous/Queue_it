@@ -15,6 +15,7 @@ import { TrackMap } from './TrackMap.jsx'
 import { HoldButton } from './HoldButton.jsx'
 import { StageView } from './StageView.jsx'
 import { t, useLang } from '../lib/i18n.js'
+import { useMedia } from '../lib/useMedia.js'
 
 const TABS = [
   ['structure', 'Estructura'],
@@ -24,6 +25,9 @@ const TABS = [
 
 export function Editor({ id, goHome }) {
   useLang()
+  const wide = useMedia('(min-width: 900px)')
+  const xwide = useMedia('(min-width: 1280px)')
+  const cols = xwide ? 3 : wide ? 2 : 1
   const { project, update, missing, flush, discard } = useProject(id)
   const [tab, setTab] = useState('structure')
   const [playing, setPlaying] = useState(false)
@@ -175,6 +179,20 @@ export function Editor({ id, goHome }) {
   }
 
   const cueList = sortCues(project.cues, timeline).map((c) => ({ ...c, t: cueTime(timeline, c), pos: cueBarBeat(timeline, c) }))
+
+  const panels = {
+    structure:
+      project.kind === 'metronome' ? (
+        <SectionsPanel project={project} update={update} disabled={playing} />
+      ) : (
+        <AudioPanel project={project} update={update} timeline={timeline} getPos={getPos} playing={playing} startTime={startTime} setStartTime={setStartTime} />
+      ),
+    cues: (
+      <CuesPanel cues={cueList} onAdd={() => setEditingCue(newTimeCue(shownPos))} onEdit={(c) => setEditingCue(project.cues.find((x) => x.id === c.id))} />
+    ),
+    settings: <SettingsPanel project={project} update={update} timeline={timeline} player={player} onBeforeDelete={discard} onDeleted={goHome} />,
+  }
+  const sideTab = tab === 'settings' ? 'settings' : 'cues'
   const lastBar = timeline.bars.at(-1)?.bar ?? 1
 
   return (
@@ -216,31 +234,53 @@ export function Editor({ id, goHome }) {
 
       <TrackMap project={project} timeline={timeline} getPos={getPos} onSeek={seek} />
 
-      <nav className="tabs" role="tablist">
-        {TABS.map(([k, label]) => (
-          <button key={k} role="tab" aria-selected={tab === k} className={tab === k ? 'is-active' : ''} onClick={() => setTab(k)}>
-            {t(label)}
-            {k === 'cues' && project.cues.length > 0 && <span className="tab-count">{project.cues.length}</span>}
-          </button>
-        ))}
-      </nav>
-
-      <main className="panel">
-        {tab === 'structure' && project.kind === 'metronome' && <SectionsPanel project={project} update={update} disabled={playing} />}
-        {tab === 'structure' && project.kind === 'audio' && (
-          <AudioPanel project={project} update={update} timeline={timeline} getPos={getPos} playing={playing} startTime={startTime} setStartTime={setStartTime} />
-        )}
-        {tab === 'cues' && (
-          <CuesPanel
-            cues={cueList}
-            onAdd={() => setEditingCue(newTimeCue(shownPos))}
-            onEdit={(c) => setEditingCue(project.cues.find((x) => x.id === c.id))}
-          />
-        )}
-        {tab === 'settings' && (
-          <SettingsPanel project={project} update={update} timeline={timeline} player={player} onBeforeDelete={discard} onDeleted={goHome} />
-        )}
-      </main>
+      {cols === 1 ? (
+        <>
+          <nav className="tabs" role="tablist">
+            {TABS.map(([k, label]) => (
+              <button key={k} role="tab" aria-selected={tab === k} className={tab === k ? 'is-active' : ''} onClick={() => setTab(k)}>
+                {t(label)}
+                {k === 'cues' && project.cues.length > 0 && <span className="tab-count">{project.cues.length}</span>}
+              </button>
+            ))}
+          </nav>
+          <main className="panel">{panels[tab]}</main>
+        </>
+      ) : (
+        // PC: los paneles lado a lado. Con dos columnas, Cues y Ajustes comparten la derecha.
+        <main className={`editor-cols cols-${cols}`}>
+          <section className="col" aria-label={t('Estructura')}>
+            <h2 className="col-title">{t('Estructura')}</h2>
+            {panels.structure}
+          </section>
+          {cols === 3 ? (
+            <>
+              <section className="col" aria-label={t('Cues')}>
+                <h2 className="col-title">
+                  {t('Cues')} {project.cues.length > 0 && <span className="tab-count">{project.cues.length}</span>}
+                </h2>
+                {panels.cues}
+              </section>
+              <section className="col" aria-label={t('Ajustes')}>
+                <h2 className="col-title">{t('Ajustes')}</h2>
+                {panels.settings}
+              </section>
+            </>
+          ) : (
+            <section className="col">
+              <nav className="tabs" role="tablist">
+                {TABS.slice(1).map(([k, label]) => (
+                  <button key={k} role="tab" aria-selected={sideTab === k} className={sideTab === k ? 'is-active' : ''} onClick={() => setTab(k)}>
+                    {t(label)}
+                    {k === 'cues' && project.cues.length > 0 && <span className="tab-count">{project.cues.length}</span>}
+                  </button>
+                ))}
+              </nav>
+              <div className="col-body">{panels[sideTab]}</div>
+            </section>
+          )}
+        </main>
+      )}
 
       <footer className="transport">
         <div className="transport-seek">
@@ -292,16 +332,16 @@ export function Editor({ id, goHome }) {
             )}
           </div>
           <div className="transport-actions">
-            <button className="icon-btn" onClick={markCue} aria-label={t('Marcar cue aquí')} title={t('Marcar cue aquí')}>
+            <button className="icon-btn" data-shortcut="mark" onClick={markCue} aria-label={t('Marcar cue aquí')} title={`${t('Marcar cue aquí')} (M)`}>
               <Icon name="plus" />
             </button>
-            <HoldButton onStep={() => skip(-1)} disabled={!!status} aria-label={t('Retroceder un compás (mantén para seguir)')} title={t('Retroceder (mantén presionado)')}>
+            <HoldButton data-shortcut="back" onStep={() => skip(-1)} disabled={!!status} aria-label={t('Retroceder un compás (mantén para seguir)')} title={`${t('Retroceder (mantén presionado)')} (←)`}>
               <Icon name="rew" fill />
             </HoldButton>
-            <button className={`play-btn${playing ? ' is-playing' : ''}`} onClick={play} disabled={!!status} aria-label={playing ? t('Pausar') : t('Reproducir')}>
+            <button className={`play-btn${playing ? ' is-playing' : ''}`} data-shortcut="play" onClick={play} disabled={!!status} aria-label={playing ? t('Pausar') : t('Reproducir')} title={`${playing ? t('Pausar') : t('Reproducir')} (${t('espacio')})`}>
               <Icon name={playing ? 'pause' : 'play'} fill size={26} />
             </button>
-            <HoldButton onStep={() => skip(1)} disabled={!!status} aria-label={t('Adelantar un compás (mantén para seguir)')} title={t('Adelantar (mantén presionado)')}>
+            <HoldButton data-shortcut="fwd" onStep={() => skip(1)} disabled={!!status} aria-label={t('Adelantar un compás (mantén para seguir)')} title={`${t('Adelantar (mantén presionado)')} (→)`}>
               <Icon name="fwd" fill />
             </HoldButton>
             <button className="icon-btn" onClick={() => setStage(true)} aria-label={t('Modo escenario')} title={t('Modo escenario')}>

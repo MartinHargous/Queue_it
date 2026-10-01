@@ -221,4 +221,5 @@ export default {
   "canciones": "músicas",
   "con cuenta": "com contagem",
   "Última canción": "Última música",
+  "espacio": "espaço",
 }

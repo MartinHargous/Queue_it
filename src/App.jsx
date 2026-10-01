@@ -3,6 +3,7 @@ import { Home } from './components/Home.jsx'
 import { Editor } from './components/Editor.jsx'
 import { SetlistView } from './components/SetlistView.jsx'
 import { requestPersistence } from './lib/db.js'
+import { installShortcuts } from './lib/shortcuts.js'
 
 // Rutas por hash: #/, #/listas, #/p/<id> (pista) y #/l/<id> (lista). Así el botón atrás de Android funciona.
 const parse = () => {
@@ -20,7 +21,11 @@ export default function App() {
     const on = () => setRoute(parse())
     window.addEventListener('hashchange', on)
     requestPersistence()
-    return () => window.removeEventListener('hashchange', on)
+    const off = installShortcuts()
+    return () => {
+      window.removeEventListener('hashchange', on)
+      off()
+    }
   }, [])
 
   const back = (fallback) => () => {

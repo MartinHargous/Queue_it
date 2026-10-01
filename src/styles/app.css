@@ -1143,3 +1143,119 @@ input[type='range'].seek {
   border-color: var(--amber);
   color: var(--amber-ink);
 }
+
+/* ---------- PC y tabletas: usar el ancho de la pantalla ---------- */
+@media (min-width: 900px) {
+  .screen {
+    max-width: 1600px;
+  }
+  .appbar {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+  .trackmap {
+    height: 52px;
+    margin: 0 24px 12px;
+  }
+  /* editor en columnas */
+  .editor-cols {
+    flex: 1;
+    min-height: 0;
+    display: grid;
+    grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
+    border-top: 1px solid var(--line);
+  }
+  .editor-cols.cols-3 {
+    grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr) minmax(0, 0.9fr);
+  }
+  .col {
+    min-height: 0;
+    overflow-y: auto;
+    padding: 18px 24px 40px;
+    border-right: 1px solid var(--line);
+  }
+  .col:last-child {
+    border-right: 0;
+  }
+  .col .tabs {
+    margin: -18px -24px 16px;
+    padding: 0 16px;
+  }
+  .col-title {
+    font: 600 1.35rem var(--display);
+    margin-bottom: 14px;
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+  }
+  .waveform {
+    height: 180px;
+  }
+  /* transporte más cómodo con mouse */
+  .transport {
+    padding: 8px 24px 12px;
+  }
+  .transport-seek {
+    gap: 14px;
+  }
+  .seek-time {
+    font-size: 1rem;
+  }
+  .pos-bar {
+    font-size: 2.2rem;
+  }
+  .transport-actions {
+    gap: 8px;
+  }
+  .transport-actions .icon-btn {
+    width: 48px;
+    height: 48px;
+  }
+  .transport .play-btn {
+    width: 60px;
+    height: 60px;
+  }
+  /* inicio: pistas y listas en cuadrícula */
+  .home-list {
+    padding: 16px 24px 32px;
+  }
+  .project-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+    gap: 0 28px;
+  }
+  .bottom-action {
+    display: flex;
+    justify-content: flex-end;
+    padding: 12px 24px;
+  }
+  .bottom-action .btn {
+    width: auto;
+    min-width: 280px;
+  }
+  .tabs {
+    padding: 0 16px;
+  }
+  .tabs button {
+    flex: 0 0 auto;
+    padding: 0 28px;
+  }
+  /* lista de reproducción: contenido centrado y legible */
+  .setlist-main {
+    width: 100%;
+    max-width: 880px;
+    margin: 0 auto;
+  }
+  /* hojas: ventana centrada en lugar de hoja inferior */
+  .sheet-backdrop {
+    align-items: center;
+  }
+  .sheet {
+    max-width: 560px;
+    border-radius: 18px;
+    max-height: 86dvh;
+  }
+  .stage-bar {
+    font-size: clamp(8rem, 26vh, 18rem);
+  }
+}

@@ -216,6 +216,12 @@ El archivo se genera primero y después el usuario toca **Compartir** (menú nat
 
 **Instalación en Android.** Abre la URL de GitHub Pages en Chrome, luego menú → "Instalar app". Chrome genera un **WebAPK**: ícono en el cajón, pantalla completa, sin barra de navegador. Desde ahí funciona sin conexión.
 
+## PC y pantallas anchas
+
+Desde 900 px de ancho la pantalla usa hasta 1600 px. El editor deja las pestañas y muestra los paneles en columnas: Estructura y, a la derecha, Cues / Ajustes; desde 1280 px son tres columnas (Estructura, Cues y Ajustes) con scroll independiente. El inicio muestra pistas y listas en cuadrícula y las hojas se abren como ventanas centradas. `useMedia()` decide el diseño.
+
+**Atajos de teclado** (`shortcuts.js`): espacio reproduce o pausa, ← → saltan un compás y M marca un cue. Pulsan el botón visible correspondiente (el del modo escenario si está abierto) y no actúan mientras se escribe o hay una hoja abierta.
+
 ## Detalles específicos de Android
 
 - **Pantalla encendida**: Screen Wake Lock durante la reproducción, que se vuelve a pedir al regresar a la app.
