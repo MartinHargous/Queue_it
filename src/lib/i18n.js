@@ -44,7 +44,7 @@ export function setLang(l) {
   listeners.forEach((f) => f())
 }
 
-// t('Cue marcado en {t}', { t: '0:05' })
+// t('Cola marcada en {t}', { t: '0:05' })
 export function t(key, vars) {
   let s = DICTS[lang][key] ?? key
   if (vars) s = s.replace(/\{(\w+)\}/g, (m, k) => (k in vars ? vars[k] : m))

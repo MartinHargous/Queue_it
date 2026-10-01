@@ -49,7 +49,7 @@ export function ExportSheet({ project, timeline, onClose }) {
     })
 
   const exportSheet = () =>
-    run(t('Preparando hoja…'), async () => ({ blob: new Blob([cheatSheetText(project, timeline)], { type: 'text/plain' }), filename: `${name}_hoja.txt` }))
+    run(t('Preparando hoja…'), async () => ({ blob: new Blob([cheatSheetText(project, timeline)], { type: 'text/plain' }), filename: `${name}_${t('colas')}.txt` }))
 
   const exportBackup = () => run(t('Empaquetando proyecto…'), async () => ({ blob: await exportProjectFile(project), filename: `${name}.queueit.json` }))
 
@@ -61,7 +61,7 @@ export function ExportSheet({ project, timeline, onClose }) {
         <h3>{t('Audio WAV')}</h3>
         {isAudio && <Check label={t('Pista de audio')} checked={opts.track} onChange={(v) => setOpts({ ...opts, track: v })} />}
         <Check label={t('Click')} checked={opts.click} onChange={(v) => setOpts({ ...opts, click: v })} />
-        <Check label={t('Cues de voz')} checked={opts.cues} onChange={(v) => setOpts({ ...opts, cues: v })} />
+        <Check label={t('Colas de voz')} checked={opts.cues} onChange={(v) => setOpts({ ...opts, cues: v })} />
         {project.countIn?.enabled && <Check label={t('Cuenta inicial')} checked={opts.countIn} onChange={(v) => setOpts({ ...opts, countIn: v })} />}
         <button className="btn btn-primary btn-block" onClick={exportAudio} disabled={!!busy || nothing}>
           {t('Exportar audio')}
@@ -70,7 +70,7 @@ export function ExportSheet({ project, timeline, onClose }) {
       <section className="group">
         <h3>{t('Otros formatos')}</h3>
         <button className="btn btn-block" onClick={exportSheet} disabled={!!busy}>
-          {t('Hoja de cues (.txt)')}
+          {t('Hoja de colas (.txt)')}
         </button>
         <button className="btn btn-block" onClick={exportBackup} disabled={!!busy}>
           {t('Respaldo del proyecto (.json)')}

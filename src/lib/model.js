@@ -316,14 +316,14 @@ export function cheatSheetText(project, timeline) {
       lines.push(`[${s.name}]  ${t('compases')} ${bar}–${end}  ·  ${s.num}/${s.den}  ·  ${tempo} bpm`)
       cues
         .filter((c) => c.t != null && c.pos.bar >= bar && c.pos.bar <= end)
-        .forEach((c) => lines.push(`   c.${c.pos.bar}:${c.pos.beat}  (${formatTime(c.t)})  ${c.text || t('(grabación)')}`))
+        .forEach((c) => lines.push(`   ${t('c.')}${c.pos.bar}:${c.pos.beat}  (${formatTime(c.t)})  ${c.text || t('(grabación)')}`))
       bar = end + 1
     })
   } else {
     const g = project.grid
     if (g) lines.push(`${t('Tempo aprox.')} ${Math.round(g.bpm)} bpm  ·  ${g.num}/4`, '')
     cues.filter((c) => c.t != null).forEach((c) => {
-      lines.push(`c.${c.pos.bar}:${c.pos.beat}  (${formatTime(c.t)})  ${c.text || t('(grabación)')}`)
+      lines.push(`${t('c.')}${c.pos.bar}:${c.pos.beat}  (${formatTime(c.t)})  ${c.text || t('(grabación)')}`)
     })
   }
   lines.push('', `${t('Duración')} ${formatTime(timeline.duration)}  ·  ${t('hecho con Queue it')}`)

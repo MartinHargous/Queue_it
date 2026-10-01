@@ -193,7 +193,7 @@ export function Home({ go, goList, tab = 'tracks', setTab }) {
                   <span className="project-meta">
                     {p.kind === 'audio' ? t('Audio') : `${p.sections.length} ${tn(p.sections.length, 'sección', 'secciones')}`}
                     {', '}
-                    {p.cues.length} {p.cues.length === 1 ? 'cue' : 'cues'}
+                    {p.cues.length} {tn(p.cues.length, 'cola', 'colas')}
                   </span>
                 </span>
                 <span className="project-dur">{formatTime(buildTimeline(p).duration || p.audio?.duration || 0)}</span>

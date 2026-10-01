@@ -45,11 +45,11 @@ export function StageView({ project, timeline, cues, pos, playing, status, count
           <>
             <span className="muted">{barsToNext <= 0 ? t('Ahora') : barsToNext === 1 ? t('En 1 compás') : t('En {n} compases', { n: barsToNext })}</span>
             <span>
-              c.{next.pos.bar} {next.text}
+              {t('c.')}{next.pos.bar} {next.text}
             </span>
           </>
         ) : (
-          <span className="muted">{t('Sin más cues')}</span>
+          <span className="muted">{t('Sin más colas')}</span>
         )}
       </div>
       <div className={`stage-controls${setlist ? ' has-setlist' : ''}`}>

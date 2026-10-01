@@ -19,7 +19,7 @@ import { useMedia } from '../lib/useMedia.js'
 
 const TABS = [
   ['structure', 'Estructura'],
-  ['cues', 'Cues'],
+  ['cues', 'Colas'],
   ['settings', 'Ajustes'],
 ]
 
@@ -140,7 +140,7 @@ export function Editor({ id, goHome }) {
       await resumeContext()
       setStatus(t('Preparando…'))
       const res = await loadResources(project, { onStatus: setStatus })
-      if (res.errors.length) setToast(t('{n} cue(s) no se pudieron preparar', { n: res.errors.length }))
+      if (res.errors.length) setToast(t('{n} cola(s) no se pudieron preparar', { n: res.errors.length }))
       const from = startTime >= endTime - 0.05 ? 0 : startTime // al final, vuelve a empezar
       if (from !== startTime) setStartTime(from)
       await player.play(
@@ -186,7 +186,7 @@ export function Editor({ id, goHome }) {
   const markCue = () => {
     const cue = newTimeCue(playing ? player.position : startTime)
     update((p) => ({ ...p, cues: [...p.cues, cue] }))
-    setToast(t('Cue marcado en {t}', { t: `${formatTimePrecise(cue.time)} (c.${info.bar}:${Math.max(1, info.beat)})` }))
+    setToast(t('Cola marcada en {t}', { t: `${formatTimePrecise(cue.time)} (${t('c.')}${info.bar}:${Math.max(1, info.beat)})` }))
   }
 
   const saveCue = (cue) => {
@@ -278,9 +278,9 @@ export function Editor({ id, goHome }) {
           </section>
           {cols === 3 ? (
             <>
-              <section className="col" aria-label={t('Cues')}>
+              <section className="col" aria-label={t('Colas')}>
                 <h2 className="col-title">
-                  {t('Cues')} {project.cues.length > 0 && <span className="tab-count">{project.cues.length}</span>}
+                  {t('Colas')} {project.cues.length > 0 && <span className="tab-count">{project.cues.length}</span>}
                 </h2>
                 {panels.cues}
               </section>
@@ -355,7 +355,7 @@ export function Editor({ id, goHome }) {
             )}
           </div>
           <div className="transport-actions">
-            <button className="icon-btn" data-shortcut="mark" onClick={markCue} aria-label={t('Marcar cue aquí')} title={`${t('Marcar cue aquí')} (M)`}>
+            <button className="icon-btn" data-shortcut="mark" onClick={markCue} aria-label={t('Marcar cola aquí')} title={`${t('Marcar cola aquí')} (M)`}>
               <Icon name="plus" />
             </button>
             <HoldButton data-shortcut="back" onStep={() => skip(-1)} disabled={!!status} aria-label={t('Retroceder un compás (mantén para seguir)')} title={`${t('Retroceder (mantén presionado)')} (←)`}>

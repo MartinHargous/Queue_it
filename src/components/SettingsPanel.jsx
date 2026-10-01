@@ -53,7 +53,7 @@ export function SettingsPanel({ project, update, timeline, player, onBeforeDelet
             </label>
           </>
         )}
-        <Slider label={t('Cues')} value={mix.cues} onChange={(v) => setMix('cues', v)} />
+        <Slider label={t('Colas')} value={mix.cues} onChange={(v) => setMix('cues', v)} />
       </section>
 
       <CountInGroup project={project} update={update} timeline={timeline} />
@@ -85,7 +85,7 @@ export function SettingsPanel({ project, update, timeline, player, onBeforeDelet
         <button className="btn btn-block" onClick={testVoice} disabled={testing}>
           {testing ? t('Generando…') : t('Probar voz')}
         </button>
-        <p className="hint">{t('La voz se genera en el teléfono (eSpeak), funciona sin internet y se incluye al exportar. Cada cue puede usar otro idioma.')}</p>
+        <p className="hint">{t('La voz se genera en el teléfono (eSpeak), funciona sin internet y se incluye al exportar. Cada cola puede usar otro idioma.')}</p>
       </section>
 
       <section className="group">

@@ -139,7 +139,7 @@ export function CueSheet({ cue, project, timeline, lastBar, currentTime = 0, isN
 
   return (
     <Sheet
-      title={isNew ? t('Nuevo cue') : t('Editar cue')}
+      title={isNew ? t('Nueva cola') : t('Editar cola')}
       onClose={onClose}
       footer={
         <>
@@ -149,12 +149,12 @@ export function CueSheet({ cue, project, timeline, lastBar, currentTime = 0, isN
             </button>
           )}
           <button className="btn btn-primary grow" onClick={save} disabled={!!recording}>
-            {t('Guardar cue')}
+            {t('Guardar cola')}
           </button>
         </>
       }
     >
-      <div className="segmented" role="radiogroup" aria-label={t('Anclar el cue a')}>
+      <div className="segmented" role="radiogroup" aria-label={t('Anclar la cola a')}>
         {ANCHORS.map(([k, label]) => (
           <button key={k} role="radio" aria-checked={draft.anchor === k} className={draft.anchor === k ? 'is-active' : ''} onClick={() => setAnchor(k)}>
             {t(label)}
@@ -175,7 +175,8 @@ export function CueSheet({ cue, project, timeline, lastBar, currentTime = 0, isN
           />
           <div className="cue-anchor-info">
             <span className="muted">
-              {formatTimePrecise(draft.time ?? 0)} · {t('cae en')} c.{timePos.bar}:{timePos.beat}
+              {formatTimePrecise(draft.time ?? 0)} · {t('cae en')} {t('c.')}
+              {timePos.bar}:{timePos.beat}
             </span>
             <button className="btn" onClick={() => set({ time: round(currentTime) })}>
               {t('Usar cursor')} ({formatTimePrecise(currentTime)})
@@ -189,11 +190,11 @@ export function CueSheet({ cue, project, timeline, lastBar, currentTime = 0, isN
             <Stepper label={t('Compás')} value={draft.bar} min={firstBar} max={lastBar} onChange={(v) => set({ bar: v })} />
             <Stepper label={t('Tiempo')} value={Math.min(draft.beat, beatsInBar)} min={1} max={beatsInBar} onChange={(v) => set({ beat: v })} />
           </div>
-          <p className="hint">{t('Sigue al compás: si cambias el tempo, el cue se mueve con la música.')}</p>
+          <p className="hint">{t('Sigue al compás: si cambias el tempo, la cola se mueve con la música.')}</p>
         </>
       )}
 
-      <div className="segmented" role="radiogroup" aria-label={t('Tipo de cue')}>
+      <div className="segmented" role="radiogroup" aria-label={t('Tipo de cola')}>
         {KINDS.map(([k, label]) => (
           <button key={k} role="radio" aria-checked={draft.kind === k} className={draft.kind === k ? 'is-active' : ''} onClick={() => set({ kind: k })}>
             {t(label)}
@@ -241,7 +242,7 @@ export function CueSheet({ cue, project, timeline, lastBar, currentTime = 0, isN
       {draft.kind !== 'text' && (
         <>
           <label className="field">
-            <span>{t('Volumen del cue')}</span>
+            <span>{t('Volumen de la cola')}</span>
             <input type="range" min="0" max="1.5" step="0.05" value={draft.gain ?? 1} onChange={(e) => set({ gain: Number(e.target.value) })} />
           </label>
           <button className="btn btn-block" onClick={preview} disabled={!!busy || !!recording || (draft.kind === 'voice' && !hasAudio)}>

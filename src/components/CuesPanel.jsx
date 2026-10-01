@@ -10,8 +10,8 @@ export function CuesPanel({ cues, onAdd, onEdit }) {
     <div className="stack">
       {cues.length === 0 ? (
         <div className="empty small">
-          <p className="empty-title">{t('Sin cues todavía')}</p>
-          <p className="muted">{t('Un cue es un aviso en un momento de la pista: una voz que dice «coro», una grabación tuya o una nota para la hoja.')}</p>
+          <p className="empty-title">{t('Sin colas todavía')}</p>
+          <p className="muted">{t('Una cola es un aviso en un momento de la pista: una voz que dice «coro», una grabación tuya o una nota para la hoja.')}</p>
         </div>
       ) : (
         <ul className="cue-list">
@@ -26,7 +26,7 @@ export function CuesPanel({ cues, onAdd, onEdit }) {
                   <Icon name={KIND_ICON[c.kind]} size={20} title={t(KIND_LABEL[c.kind])} />
                 </span>
                 <span className="cue-text">{c.text || <span className="muted">{c.kind === 'voice' ? t('Grabación sin nota') : t('Sin texto')}</span>}</span>
-                <span className="cue-time" title={c.anchor === 'time' ? t('Fijo en segundos') : t('Anclado al compás')}>
+                <span className="cue-time" title={c.anchor === 'time' ? t('Fija en segundos') : t('Anclada al compás')}>
                   {c.t == null ? t('fuera') : formatTime(c.t)}
                   {c.anchor !== 'time' && <span className="cue-anchor-tag">{t('compás')}</span>}
                   {c.kind === 'tts' && c.voice && <span className="cue-anchor-tag">{c.voice.split('/').pop()}</span>}
@@ -37,7 +37,7 @@ export function CuesPanel({ cues, onAdd, onEdit }) {
         </ul>
       )}
       <button className="btn btn-block" onClick={onAdd}>
-        <Icon name="plus" /> {t('Agregar cue')}
+        <Icon name="plus" /> {t('Agregar cola')}
       </button>
     </div>
   )
