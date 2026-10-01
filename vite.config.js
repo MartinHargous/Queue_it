@@ -25,8 +25,8 @@ export default defineConfig({
       manifest: {
         name: 'Queue it',
         short_name: 'Queue it',
-        description: 'Guías de click y cues de voz para músicos. Funciona sin internet.',
-        lang: 'es',
+        description: 'Click track, voice cues and setlists for musicians. Works offline.',
+        lang: 'en',
         id: './',
         start_url: './',
         scope: './',

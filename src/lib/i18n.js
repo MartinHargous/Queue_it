@@ -5,13 +5,16 @@ import en from './i18n/en.js'
 import pt from './i18n/pt.js'
 
 export const LANGS = [
-  ['es', 'Español'],
   ['en', 'English'],
+  ['es', 'Español'],
   ['pt', 'Português'],
 ]
 
 const DICTS = { es: {}, en, pt }
 const KEY = 'queueit.lang'
+
+// Inglés por defecto; se recuerda el idioma que elija el usuario en el selector
+export const DEFAULT_LANG = 'en'
 
 function initial() {
   try {
@@ -20,8 +23,7 @@ function initial() {
   } catch {
     /* sin almacenamiento */
   }
-  const nav = globalThis.navigator?.language?.slice(0, 2)
-  return DICTS[nav] ? nav : 'es'
+  return DEFAULT_LANG
 }
 
 let lang = initial()
