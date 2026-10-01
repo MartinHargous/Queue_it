@@ -43,6 +43,7 @@ export default defineConfig({
       workbox: {
         // Precachea todo, incluido el motor de voz (~5 MB), para funcionar 100% offline
         globPatterns: ['**/*.{js,css,html,svg,png,woff,woff2,json}'],
+        globIgnores: ['og-image.png'], // solo la usan las vistas previas al compartir
         maximumFileSizeToCacheInBytes: 12 * 1024 * 1024,
         navigateFallback: 'index.html',
       },
