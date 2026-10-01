@@ -174,6 +174,23 @@ export function barStartTime(timeline, bar) {
   return b ? b.t : 0
 }
 
+// Lleva un instante de una línea de tiempo a otra conservando la posición musical
+// (mismo compás, tiempo y fracción del pulso). Sirve para cambiar tempo o compases
+// mientras suena sin que el click salte. Si ese compás ya no existe, va al final.
+export function mapMusicalTime(oldTl, newTl, t) {
+  const ob = oldTl.beats
+  const i = beatIndexAt(oldTl, t)
+  if (i < 0) return t // antes del primer pulso: mismo segundo
+  const b = ob[i]
+  const span = (ob[i + 1]?.t ?? b.t + 60 / (b.bpm || 120)) - b.t
+  const frac = Math.min(1, Math.max(0, (t - b.t) / (span || 1)))
+  const j = newTl.beats.findIndex((x) => x.bar === b.bar && x.beat === b.beat)
+  if (j < 0) return Math.min(t, newTl.duration)
+  const nb = newTl.beats[j]
+  const nspan = (newTl.beats[j + 1]?.t ?? nb.t + 60 / (nb.bpm || 120)) - nb.t
+  return nb.t + frac * nspan
+}
+
 // Compás y tiempo en que cae un instante (para mostrar cues fijos en segundos)
 export function barBeatAt(timeline, t) {
   const i = beatIndexAt(timeline, t)

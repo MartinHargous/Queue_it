@@ -46,7 +46,8 @@ function scheduleEvent(ctx, buses, e, when, res) {
     g.gain.value = gain
     src.connect(g).connect(bus)
   } else src.connect(bus)
-  src.start(Math.max(when, ctx.currentTime))
+  src.when = Math.max(when, ctx.currentTime)
+  src.start(src.when)
   return src
 }
 
@@ -111,7 +112,10 @@ export class Player {
     this.count = plan?.clicks.length ? plan.clicks : null
     for (const c of this.count ?? []) {
       const node = scheduleEvent(ctx, this.buses, { type: 'click', accent: c.accent }, this.ctxStart + (c.t - fromTime), res)
-      if (node) this.nodes.add(node)
+      if (node) {
+        node.isCount = true
+        this.nodes.add(node)
+      }
     }
     let tail = 0.5
     for (const b of res.cueBuffers.values()) tail = Math.max(tail, b.duration + 0.1) // deja terminar el último cue
@@ -123,6 +127,7 @@ export class Player {
       src.buffer = res.track
       src.connect(this.buses.track)
       src.start(this.ctxStart, fromTime)
+      src.isTrack = true
       this.nodes.add(src)
     }
     this.playing = true
@@ -145,6 +150,40 @@ export class Player {
       this.stop()
       this.onEnd?.()
     }
+  }
+
+  // Aplica cambios del proyecto mientras suena (tempo, compases, cues, grilla) sin cortar:
+  // cancela lo programado que todavía no sonó y reprograma desde el mismo punto.
+  // mapTime(t) lleva un instante de la línea de tiempo vieja a la nueva (posición musical).
+  update(project, timeline, res = this.res, mapTime = (t) => t) {
+    if (!this.playing || !this.ctx) return
+    const ctx = this.ctx
+    const now = ctx.currentTime
+    const counting = now < this.ctxStart // todavía suena la cuenta inicial
+    for (const n of this.nodes) {
+      if (n.isCount || n.isTrack || !(n.when > now + 0.005)) continue
+      try {
+        n.stop()
+      } catch {
+        /* ya detenido */
+      }
+      this.nodes.delete(n)
+    }
+    if (!counting) {
+      const song = this.from + (now - this.ctxStart) // instante que se está programando ahora
+      this.from = mapTime(song)
+      this.ctxStart = now
+      this.lastPos = this.from
+    }
+    this.args = { project, timeline, res }
+    this.res = res
+    this.events = buildEvents(project, timeline)
+    this.idx = this.events.findIndex((e) => e.t > this.from + (counting ? -0.001 : 0.005))
+    if (this.idx < 0) this.idx = this.events.length
+    let tail = 0.5
+    for (const b of res.cueBuffers.values()) tail = Math.max(tail, b.duration + 0.1)
+    this.end = Math.max(timeline.duration, res.track?.duration ?? 0) + tail
+    this.tick()
   }
 
   // Salta a otro instante sin volver a preparar los recursos
