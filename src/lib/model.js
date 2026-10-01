@@ -1,6 +1,6 @@
 // Modelo de datos y cálculo de la línea de tiempo.
 // Todo aquí es puro (sin DOM ni Web Audio) para poder probarlo en Node.
-import { t } from './i18n.js'
+import { t, getLang } from './i18n.js'
 
 export const uid = () =>
   (globalThis.crypto?.randomUUID?.() ?? Math.random().toString(36).slice(2) + Date.now().toString(36))
@@ -19,6 +19,9 @@ export function newSection(prev, index = 0) {
   }
 }
 
+// Voz de las pistas nuevas según el idioma de la interfaz
+const DEFAULT_VOICE = { en: 'en/en-us', es: 'es-la', pt: 'pt' }
+
 export function newProject(kind) {
   const now = Date.now()
   return {
@@ -33,7 +36,7 @@ export function newProject(kind) {
     grid: null, // { mode: 'detected'|'fixed', bpm, offset, num, beats: number[], downbeat, nudge }
     cues: [],
     mix: { click: 0.8, track: 1, cues: 1, clickOnAudio: false },
-    tts: { voice: 'es-la', speed: 160, pitch: 45 },
+    tts: { voice: DEFAULT_VOICE[getLang()] ?? 'en/en-us', speed: 160, pitch: 45 },
   }
 }
 

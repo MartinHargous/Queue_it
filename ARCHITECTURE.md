@@ -190,7 +190,7 @@ A diferencia de Moises, no usa redes neuronales de separación de fuentes: con m
 
 ## Idioma de la interfaz
 
-Selector ES / EN / PT en la pantalla de inicio. Por defecto usa el idioma del teléfono y la elección se guarda en `localStorage`. `t('texto en español', vars)` busca la traducción y, si falta, muestra el español. Los componentes llaman `useLang()` para redibujarse al cambiar de idioma.
+Selector EN / ES / PT en la pantalla de inicio. El idioma por defecto es inglés (`DEFAULT_LANG`) y la elección se guarda en `localStorage`. Las pistas nuevas usan la voz del idioma de la interfaz (inglés EE. UU., español latinoamericano o portugués de Brasil). `t('texto en español', vars)` busca la traducción y, si falta, muestra el español. Los componentes llaman `useLang()` para redibujarse al cambiar de idioma.
 
 ## Persistencia
 
@@ -218,6 +218,8 @@ El archivo se genera primero y después el usuario toca **Compartir** (menú nat
 ## PWA y offline
 
 `vite-plugin-pwa` genera `sw.js` con Workbox. La lista de precache incluye todo el JS (el worker de voz pesa unos 1,7 MB), CSS, fuentes e íconos; el límite por archivo se subió a 12 MB. `base: './'` hace que funcione tanto en la raíz como bajo `/Queue_it/` en GitHub Pages. `registerType: 'autoUpdate'` actualiza la app en segundo plano cuando hay una versión nueva publicada.
+
+**Vista previa al compartir.** `index.html` tiene etiquetas Open Graph y de Twitter en inglés con título, descripción e imagen (`public/og-image.png`, 1200×630). WhatsApp, Discord y Telegram las muestran al pegar el link. Las URL son absolutas y apuntan a `https://martinhargous.github.io/Queue_it/`; si la página cambia de dirección hay que actualizarlas. La imagen no se precachea.
 
 **Botón de instalación.** Chrome no siempre muestra su aviso de instalación por su cuenta. `install.js` guarda el evento `beforeinstallprompt` y la pantalla de inicio muestra un aviso con el botón **Instalar** (o un ícono de descarga si el aviso se cerró). En iPhone/iPad, donde ese evento no existe, el aviso explica cómo agregarla desde Safari. No aparece si la app ya está instalada.
 
