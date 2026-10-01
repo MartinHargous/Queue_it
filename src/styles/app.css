@@ -95,8 +95,14 @@ p {
   padding-left: 20px;
 }
 .wordmark {
+  display: flex;
+  align-items: center;
+  gap: 10px;
   font: 700 2rem/1 var(--display);
   letter-spacing: 0.01em;
+}
+.wordmark img {
+  border-radius: 8px;
 }
 .home-bar {
   justify-content: space-between;

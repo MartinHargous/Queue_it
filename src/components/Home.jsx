@@ -73,7 +73,10 @@ export function Home({ go, goList, tab = 'tracks', setTab }) {
   return (
     <div className="screen">
       <header className="appbar home-bar">
-        <h1 className="wordmark">Queue it</h1>
+        <h1 className="wordmark">
+          <img src="favicon.svg" alt="" width="34" height="34" />
+          Queue it
+        </h1>
         <div className="lang-picker" role="radiogroup" aria-label={t('Idioma')}>
           {LANGS.map(([code, name]) => (
             <button key={code} role="radio" aria-checked={lang === code} className={lang === code ? 'is-active' : ''} onClick={() => setLang(code)} title={name}>
