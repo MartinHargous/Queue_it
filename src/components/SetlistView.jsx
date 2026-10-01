@@ -97,7 +97,7 @@ export function SetlistView({ id, goHome }) {
         )}
       </header>
 
-      <main className="home-list stack">
+      <main className="home-list stack setlist-main">
         <p className="muted setlist-summary">
           {songs.length} {tn(songs.length, 'canción', 'canciones')} · {formatTime(total)}
         </p>

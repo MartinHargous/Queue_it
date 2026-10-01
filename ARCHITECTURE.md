@@ -214,7 +214,15 @@ El archivo se genera primero y después el usuario toca **Compartir** (menú nat
 
 `vite-plugin-pwa` genera `sw.js` con Workbox. La lista de precache incluye todo el JS (el worker de voz pesa unos 1,7 MB), CSS, fuentes e íconos; el límite por archivo se subió a 12 MB. `base: './'` hace que funcione tanto en la raíz como bajo `/Queue_it/` en GitHub Pages. `registerType: 'autoUpdate'` actualiza la app en segundo plano cuando hay una versión nueva publicada.
 
+**Botón de instalación.** Chrome no siempre muestra su aviso de instalación por su cuenta. `install.js` guarda el evento `beforeinstallprompt` y la pantalla de inicio muestra un aviso con el botón **Instalar** (o un ícono de descarga si el aviso se cerró). En iPhone/iPad, donde ese evento no existe, el aviso explica cómo agregarla desde Safari. No aparece si la app ya está instalada.
+
 **Instalación en Android.** Abre la URL de GitHub Pages en Chrome, luego menú → "Instalar app". Chrome genera un **WebAPK**: ícono en el cajón, pantalla completa, sin barra de navegador. Desde ahí funciona sin conexión.
+
+## PC y pantallas anchas
+
+Desde 900 px de ancho la pantalla usa hasta 1600 px. El editor deja las pestañas y muestra los paneles en columnas: Estructura y, a la derecha, Cues / Ajustes; desde 1280 px son tres columnas (Estructura, Cues y Ajustes) con scroll independiente. El inicio muestra pistas y listas en cuadrícula y las hojas se abren como ventanas centradas. `useMedia()` decide el diseño.
+
+**Atajos de teclado** (`shortcuts.js`): espacio reproduce o pausa, ← → saltan un compás y M marca un cue. Pulsan el botón visible correspondiente (el del modo escenario si está abierto) y no actúan mientras se escribe o hay una hoja abierta.
 
 ## Detalles específicos de Android
 

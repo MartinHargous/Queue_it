@@ -221,4 +221,10 @@ export default {
   "canciones": "songs",
   "con cuenta": "with count-in",
   "Última canción": "Last song",
+  "espacio": "space",
+  "Instalar app": "Install app",
+  "Instala Queue it": "Install Queue it",
+  "En Safari toca Compartir y luego «Agregar a inicio».": "In Safari tap Share, then “Add to Home Screen”.",
+  "Se abre como una app, a pantalla completa y sin internet.": "Opens like an app, full screen and offline.",
+  "Instalar": "Install",
 }
