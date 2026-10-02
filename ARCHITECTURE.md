@@ -261,6 +261,8 @@ npm test            # tests del modelo con node:test (sin dependencias)
 
 Para probar en el teléfono durante el desarrollo, usa `npm run dev -- --host` en la misma red Wi-Fi. Ten en cuenta que el micrófono y la instalación exigen HTTPS o `localhost`: usa *port forwarding* de `chrome://inspect` con el teléfono por USB.
 
+**Ramas, commits y PRs.** Siguen el protocolo de `CONTRIBUTING.md`: tipos `FEAT`, `FIX` y `UPDATE`, ramas `tipo/descripcion`, cambios atómicos y autocontenidos. El workflow `.github/workflows/protocol.yml` revisa el título y la rama de cada PR.
+
 **Publicar.** Al hacer push a `main`, el workflow `.github/workflows/deploy.yml` compila y publica en GitHub Pages. Actívalo una vez en Settings → Pages → Source: **GitHub Actions**.
 
 ## Verificación de la detección de pulso
