@@ -1,0 +1,30 @@
+name: Protocolo de cambios
+
+# Revisa que cada PR siga CONTRIBUTING.md: título "TIPO: Resumen" y rama "tipo/descripcion".
+on:
+  pull_request:
+    types: [opened, edited, reopened, synchronize]
+
+permissions:
+  contents: read
+
+jobs:
+  protocol:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Título y rama
+        env:
+          TITLE: ${{ github.event.pull_request.title }}
+          BRANCH: ${{ github.head_ref }}
+        run: |
+          ok=1
+          if ! printf '%s' "$TITLE" | grep -Eq '^(FEAT|FIX|UPDATE): .+'; then
+            echo "::error::El título debe empezar con FEAT:, FIX: o UPDATE: (ver CONTRIBUTING.md). Título: $TITLE"
+            ok=0
+          fi
+          if ! printf '%s' "$BRANCH" | grep -Eq '^(feat|fix|update)/[a-z0-9][a-z0-9-]*$'; then
+            echo "::error::La rama debe llamarse feat/…, fix/… o update/… en minúsculas con guiones (ver CONTRIBUTING.md). Rama: $BRANCH"
+            ok=0
+          fi
+          [ "$ok" = 1 ] && echo "Sigue el protocolo."
+          [ "$ok" = 1 ]
