@@ -217,7 +217,7 @@ export function Home({ go, goList, tab = 'tracks', setTab }) {
       </div>
 
       <input ref={audioInput} type="file" accept="audio/*" hidden onChange={(e) => { createFromAudio(e.target.files[0]); e.target.value = '' }} />
-      <input ref={importInput} type="file" accept=".json,application/json" hidden onChange={(e) => { importFile(e.target.files[0]); e.target.value = '' }} />
+      <input ref={importInput} type="file" accept=".json,.txt,application/json,text/plain" hidden onChange={(e) => { importFile(e.target.files[0]); e.target.value = '' }} />
 
       {creating && (
         <Sheet title={t('Nueva pista')} onClose={() => setCreating(false)}>

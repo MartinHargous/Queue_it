@@ -6,19 +6,30 @@ export function safeName(s) {
   return (s || 'pista').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^\w-]+/g, '_').replace(/^_+|_+$/g, '').slice(0, 60) || 'pista'
 }
 
-// Comparte con el menú nativo de Android; si no se puede, descarga.
-export async function shareOrDownload(blob, filename) {
+// Chrome solo deja compartir algunos tipos de archivo (audio, imagen, video, texto, PDF):
+// un .json no entra. El respaldo es texto, así que se comparte como .txt.
+function shareableFile(blob, filename) {
   const file = new File([blob], filename, { type: blob.type || 'application/octet-stream' })
-  if (navigator.canShare?.({ files: [file] })) {
-    try {
-      await navigator.share({ files: [file], title: filename })
-      return 'shared'
-    } catch (err) {
-      if (err?.name === 'AbortError') return 'cancelled'
-    }
+  if (navigator.canShare?.({ files: [file] })) return file
+  if (/\.json$/i.test(filename)) {
+    const txt = new File([blob], filename.replace(/\.json$/i, '.txt'), { type: 'text/plain' })
+    if (navigator.canShare?.({ files: [txt] })) return txt
   }
-  downloadBlob(blob, filename)
-  return 'downloaded'
+  return null
+}
+
+// Abre el menú de compartir del sistema (WhatsApp, correo, Drive…).
+// Devuelve 'shared' | 'cancelled' | 'unsupported' (el navegador no comparte archivos)
+// | 'failed'. Nunca descarga por su cuenta: eso lo hace el botón Guardar.
+export async function shareFile(blob, filename) {
+  const file = shareableFile(blob, filename)
+  if (!file || !navigator.share) return 'unsupported'
+  try {
+    await navigator.share({ files: [file], title: filename })
+    return 'shared'
+  } catch (err) {
+    return err?.name === 'AbortError' ? 'cancelled' : 'failed'
+  }
 }
 
 export function downloadBlob(blob, filename) {

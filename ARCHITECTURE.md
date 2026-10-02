@@ -217,6 +217,8 @@ El autoguardado usa un debounce de 400 ms y además guarda al salir de la pantal
 
 El archivo se genera primero y después el usuario toca **Compartir** (menú nativo de Android vía Web Share API) o **Guardar** (descarga). Son dos pasos porque Android exige un toque reciente para abrir el menú de compartir y el render puede tardar.
 
+**Compartir** solo abre el menú del sistema; nunca descarga. Chrome comparte únicamente algunos tipos de archivo (audio, imagen, video, texto, PDF), así que el respaldo `.json` se comparte como `.queueit.txt` (mismo contenido) y la importación acepta ambos. Si el navegador no comparte archivos (p. ej. Firefox o Chrome en Linux), se avisa y se sugiere **Guardar**.
+
 ## PWA y offline
 
 `vite-plugin-pwa` genera `sw.js` con Workbox. La lista de precache incluye todo el JS (el worker de voz pesa unos 1,7 MB), CSS, fuentes e íconos; el límite por archivo se subió a 12 MB. `base: './'` hace que funcione tanto en la raíz como bajo `/Queue_it/` en GitHub Pages. `registerType: 'autoUpdate'` actualiza la app en segundo plano cuando hay una versión nueva publicada.
