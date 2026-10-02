@@ -231,4 +231,6 @@ export default {
   "cola": "fila",
   "colas": "filas",
   "c.": "c.",
+  "Este navegador no permite compartir archivos. Usa Guardar y envíalo desde Descargas.": "Este navegador não permite compartilhar arquivos. Use Salvar e envie a partir de Downloads.",
+  "No se pudo abrir el menú de compartir. Prueba de nuevo o usa Guardar.": "Não foi possível abrir o menu de compartilhar. Tente de novo ou use Salvar.",
 }

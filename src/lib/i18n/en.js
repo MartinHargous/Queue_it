@@ -231,4 +231,6 @@ export default {
   "cola": "queue",
   "colas": "queues",
   "c.": "m.",
+  "Este navegador no permite compartir archivos. Usa Guardar y envíalo desde Descargas.": "This browser can't share files. Use Save and send it from Downloads.",
+  "No se pudo abrir el menú de compartir. Prueba de nuevo o usa Guardar.": "Couldn't open the share menu. Try again or use Save.",
 }

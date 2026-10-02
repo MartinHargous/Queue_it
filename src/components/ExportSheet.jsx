@@ -3,7 +3,7 @@ import { Sheet } from './Sheet.jsx'
 import { loadResources, renderProject } from '../lib/audio/engine.js'
 import { encodeWav } from '../lib/audio/wav.js'
 import { cheatSheetText } from '../lib/model.js'
-import { shareOrDownload, downloadBlob, exportProjectFile, safeName } from '../lib/share.js'
+import { shareFile, downloadBlob, exportProjectFile, safeName } from '../lib/share.js'
 import { t } from '../lib/i18n.js'
 
 export function ExportSheet({ project, timeline, onClose }) {
@@ -30,8 +30,10 @@ export function ExportSheet({ project, timeline, onClose }) {
   }
 
   const share = async () => {
-    const r = await shareOrDownload(ready.blob, ready.filename)
-    if (r === 'downloaded') setMsg({ ok: true, text: t('Archivo guardado en Descargas.') })
+    setMsg(null)
+    const r = await shareFile(ready.blob, ready.filename)
+    if (r === 'unsupported') setMsg({ ok: false, text: t('Este navegador no permite compartir archivos. Usa Guardar y envíalo desde Descargas.') })
+    else if (r === 'failed') setMsg({ ok: false, text: t('No se pudo abrir el menú de compartir. Prueba de nuevo o usa Guardar.') })
   }
   const save = () => {
     downloadBlob(ready.blob, ready.filename)
